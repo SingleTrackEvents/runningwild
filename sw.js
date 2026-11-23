@@ -6,12 +6,12 @@
 // few seconds (weak signal). Leaflet and the fonts are served with the app (lib/) and saved with each build, so nothing
 // the pages need comes from another site. Map tiles are cached as they're used; the topo map can also be saved whole
 // (js/basemap.js).
-const BUILD = '2';
+const BUILD = '3';
 const VERSION = 'rw-v' + BUILD;
 const NEXT = 'rw-next-v'; // + a newer build: files for its pages, fetched before that build's worker is in
 // Pages, manifests and icons, saved by their own address.
 const PAGES = ['./', 'index.html', 'field.html', 'map.html', 'admin.html', 'manifest.webmanifest', 'manifest-field.webmanifest',
-  'icons/logo.png', 'icons/icon-48.png', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
+  'icons/logo.png', 'icons/rw-logo.png', 'icons/icon-48.png', 'icons/icon-180.png', 'icons/icon-192.png', 'icons/icon-512.png',
   // The Leaflet images and the fonts (asked for by lib/leaflet.css and lib/fonts.css, by their own address).
   'lib/images/layers.png', 'lib/images/layers-2x.png', 'lib/images/marker-icon.png', 'lib/images/marker-icon-2x.png', 'lib/images/marker-shadow.png',
   'lib/fonts/bebas-neue-latin.woff2', 'lib/fonts/bebas-neue-latin-ext.woff2', 'lib/fonts/montserrat-latin.woff2', 'lib/fonts/montserrat-latin-ext.woff2',
