@@ -233,7 +233,7 @@
       const what = runner ? 'when a runner you follow reaches a checkpoint, finishes or withdraws, and for notices from Race Control' : 'for notices from Race Control';
       let h = '';
       if (st === 'unsupported' || (st !== 'on' && !(S.push && S.push.key))) h = '';
-      else if (st === 'install') h = `<p class="lv-line"><b>Alerts on iPhone</b> need the app on your home screen: tap Share, then Add to Home Screen, and open GPT100 from there. Then you can turn on alerts ${what}.</p>`;
+      else if (st === 'install') h = `<p class="lv-line"><b>Alerts on iPhone</b> need the app on your home screen: tap Share, then Add to Home Screen, and open the app from there. Then you can turn on alerts ${what}.</p>`;
       else if (st === 'blocked') h = '<p class="lv-line warn"><b>Alerts are blocked.</b> Allow notifications for this site in the phone\'s settings, then come back here.</p>';
       else if (st === 'on') h = `<p class="lv-line ok"><b>Alerts are on</b> ${runner ? (n ? `for the ${n} runner${n > 1 ? 's' : ''} you follow, and` : '(follow a runner to hear about them), and') + ' for notices from Race Control' : 'for notices from Race Control'}. <button type="button" class="fd-linkbtn" data-push="off">Turn off</button></p>`;
       else h = `<div class="lv-row lv-alerts"><button type="button" class="btn" data-push="on">Turn on alerts</button><span class="fd-hint">A notification ${what}.</span></div><p class="fd-hint bad" data-push-err role="alert"></p>`;

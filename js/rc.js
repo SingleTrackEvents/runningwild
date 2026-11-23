@@ -264,7 +264,7 @@
   // ---------- rendering ----------
   function render() {
     if (!shown) return;
-    if (!BASE) { $('rcBody').innerHTML = '<div class="rc-msg"><h2>Race Control</h2><p>Race Control needs the GPT100 Safety Worker. See tools/RACE_CONTROL.md.</p></div>'; built = false; return; }
+    if (!BASE) { $('rcBody').innerHTML = '<div class="rc-msg"><h2>Race Control</h2><p>Race Control needs the Running Wild Worker. See tools/RUNNING_WILD_WORKER.md.</p></div>'; built = false; return; }
     if (!unlocked()) {
       built = false; if (map) { map.remove(); map = null; layer = null; }
       $('rcBody').innerHTML = '<div class="rc-msg"><h2>Race Control</h2><p>Race Control uses the medical password. Unlock the Medical tab on this device, then come back.</p><p><button class="btn primary" id="rcGoMed" type="button">Go to Medical</button></p></div>';
@@ -655,7 +655,7 @@
     const blob = new Blob([rows.map(r => r.map(q).join(',')).join('\r\n')], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'GPT100-race-control-' + new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-') + '.csv';
+    a.download = 'RunningWild-race-control-' + new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-') + '.csv';
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   }

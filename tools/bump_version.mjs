@@ -11,7 +11,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const PAGES = ['index.html', 'field.html', 'runner.html', 'map.html', 'admin.html'];
+const PAGES = ['index.html', 'field.html', 'map.html', 'admin.html'];
 const rd = f => readFileSync(join(ROOT, f), 'utf8');
 
 let sw = rd('sw.js');

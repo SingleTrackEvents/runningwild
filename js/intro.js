@@ -75,7 +75,7 @@
     async function draw() {
       if (i < 0) return;
       const s = await o.steps[i]({ IOS, STANDALONE });
-      body.innerHTML = `${i === 0 ? '<img class="rn-intro-logo" src="icons/logo.png" alt="GPT100 Miler">' : ''}<h2 id="giTitle">${s.title}</h2>${s.html}`;
+      body.innerHTML = `${i === 0 ? '<img class="rn-intro-logo" src="icons/logo.png" alt="SingleTrack Running Wild">' : ''}<h2 id="giTitle">${s.title}</h2>${s.html}`;
       wrap.querySelector('.rn-intro-dots').innerHTML = Array.from({ length: n }, (_, k) => `<i${k === i ? ' class="on"' : ''}></i>`).join('');
       wrap.querySelector('.gi-back').style.visibility = i ? 'visible' : 'hidden';
       wrap.querySelector('.gi-next').textContent = i === n - 1 ? 'Let\'s go' : 'Next';

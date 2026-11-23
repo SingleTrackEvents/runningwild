@@ -753,9 +753,9 @@
   if (window.GPTIntro) GPTIntro({
     key: 'rwIntroSafety',
     steps: [
-      () => ({ title: 'GPT100 Safety', html: `<p>The staff app for race control, the medical team and Safety Officers.</p>
+      () => ({ title: 'Running Wild Safety', html: `<p>The staff app for race control, the medical team and Safety Officers.</p>
         <p>Find the fastest team for any casualty on the course, keep an eye on the weather triggers, see the medical plan, and run the Race Control board.</p>` }),
-      GPTIntro.installStep('GPT100 Safety'),
+      GPTIntro.installStep('Running Wild Safety'),
       () => ({ title: '2. Find a casualty', html: `<ol class="rn-steps">
         <li>Type what you've been told: a <b>km</b> (pick the runner's race first if it's a stage or shorter race), <b>coordinates</b> or a <b>what3words</b> address. Or use <b>My location</b>, or <b>Pick on map</b>.</li>
         <li>You get one answer: <b>which team to send</b>, where to park (gated roads flagged), the walk in and the <b>ETA</b>, with the backup team and the stretcher carry-out time.</li>

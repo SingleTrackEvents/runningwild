@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>GPT100 Safety Admin</title>
+<title>Running Wild Admin</title>
 <link rel="icon" href="icons/icon-48.png" type="image/png">
-<link rel="stylesheet" href="lib/leaflet.css?v=109">
-<link rel="stylesheet" href="lib/fonts.css?v=109">
-<script src="lib/leaflet.js?v=109"></script>
+<link rel="stylesheet" href="lib/leaflet.css?v=1">
+<link rel="stylesheet" href="lib/fonts.css?v=1">
+<script src="lib/leaflet.js?v=1"></script>
 <style>
   :root{ --ink:#1c1c1c; --paper:#f7f5f0; --line:#dcd7cc; --hg:#c0392b; --dk:#1f6f4a; --accent:#b5651d; --muted:#6b6459; --walk:#1666c9; --jc:#1b6ca8;}
   *{box-sizing:border-box}
@@ -57,8 +57,8 @@
 </head>
 <body>
 <div id="gate"><form id="gateForm" autocomplete="off">
-  <img src="icons/logo.png" alt="SingleTrack Events GPT100 Miler" class="gate-logo">
-  <h1>GPT100 Admin</h1>
+  <img src="icons/logo.png" alt="SingleTrack Running Wild" class="gate-logo">
+  <h1>Running Wild Admin</h1>
   <p>For the Race Director and safety lead. Enter the admin password.</p>
   <input id="gatePw" type="password" placeholder="Password" autocomplete="current-password" autofocus>
   <button type="submit">Unlock</button>
@@ -94,7 +94,7 @@
 <div id="wrap">
   <div id="map"></div>
   <div id="panel">
-    <h1>GPT100 Safety: Admin</h1>
+    <h1>Running Wild Safety: Admin</h1>
     <p class="sub"><a href="index.html" style="color:var(--accent);font-weight:600">Back to the staff app</a>. This page is for planning and editing access points. Changes stay on this device until you press <b>Publish file</b> and replace <code>data/access-edits.js</code> in the repository.</p>
     <p class="sub">Click anywhere on the course. It tests every road access point within ~2 km plus the live nearest road crossing, and picks the fastest drive + trail walk-in for each base. Walk-in follows real connector tracks where mapped.</p>
     <div style="margin-bottom:12px">
@@ -173,9 +173,9 @@
     </div>
   </div>
 </div>
-<script src="data/course.js?v=109"></script>
-<script src="data/access-edits.js?v=109"></script>
-<script src="data/config.js?v=109"></script>
+<script src="data/course.js?v=1"></script>
+<script src="data/access-edits.js?v=1"></script>
+<script src="data/config.js?v=1"></script>
 <script>
 const DATA = window.GPT100_DATA;
 const route=DATA.route, BASE=DATA.bases, CROSS=DATA.crossings;

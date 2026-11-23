@@ -1,4 +1,4 @@
-// One-off: save the OpenTopoMap tiles 2 km either side of both courses and the Miler's contingency (zoom 8 to 15) into tiles/topo/,
+// One-off: save the OpenTopoMap tiles 2 km either side of every course in the event (zoom 8 to 15) into tiles/topo/,
 // and write data/tiles.js (the list the apps use to save the map for offline).
 // Phones then save the map from our own site, so OpenTopoMap's free servers are only asked once.
 // Polite: one tile at a time with a pause, identified, and tiles already saved are skipped.
@@ -35,7 +35,7 @@ if (!process.argv.includes('--list')) {
     fs.mkdirSync(path.dirname(file), { recursive: true });
     for (let tries = 0; ; tries++) {
       try {
-        const res = await fetch(`https://${'abc'[n % 3]}.tile.opentopomap.org/${k}.png`, { headers: { 'User-Agent': 'GPT100 race safety app, one-off offline corridor (singletrack.com.au)' } });
+        const res = await fetch(`https://${'abc'[n % 3]}.tile.opentopomap.org/${k}.png`, { headers: { 'User-Agent': 'SingleTrack Running Wild safety app, one-off offline corridor (singletrack.com.au)' } });
         if (!res.ok) throw new Error('HTTP ' + res.status);
         fs.writeFileSync(file, Buffer.from(await res.arrayBuffer()));
         got++;

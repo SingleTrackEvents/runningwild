@@ -1,7 +1,7 @@
 {
-  "name": "GPT100 Safety",
-  "short_name": "GPT100 Safety",
-  "description": "Race-day medical access for the GPT100: which team to send, where to park and how long it takes.",
+  "name": "Running Wild Safety",
+  "short_name": "RW Safety",
+  "description": "SingleTrack Running Wild race-day safety: the Control board, the field phones and where a spot is on the course.",
   "id": "./",
   "start_url": "./index.html",
   "scope": "./index",

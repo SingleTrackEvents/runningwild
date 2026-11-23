@@ -309,7 +309,7 @@
       $('fdWhere').innerHTML = `${poor}
         <div class="fd-kmrow"><span class="fd-kmbig">${Math.round(here.offM / 1000)} KM</span></div>
         <p class="fd-between">from the course</p>
-        <p class="notice warn">You're more than ${FAR_M / 1000} km from the GPT100 courses, so the app won't point you to a course km or a way out from here. Where am I? works within ${FAR_M / 1000} km of the course.</p>
+        <p class="notice warn">You're more than ${FAR_M / 1000} km from the event's courses, so the app won't point you to a course km or a way out from here. Where am I? works within ${FAR_M / 1000} km of the course.</p>
         ${pos}<p class="fd-facts">Need a point on the course? Enter the km above.</p>`;
       $('fdOutWay').innerHTML = ''; $('fdGrade').innerHTML = '';
       mapNow = `${poorLine()}<span class="rn-warn">You're ${Math.round(here.offM / 1000)} km from the course.</span> Where am I? works within ${FAR_M / 1000} km of it.`;
@@ -469,7 +469,7 @@
       w ? `Nearest vehicle access: ${E.cleanName(w.a)}${E.isGated(w.a) ? ' (gated)' : ''}, ${one(w.walkKm)} km walk.` : '',
       urgent && !long && r.best ? `Fastest team: ${r.best.base.name}, about ${E.fmt(r.best.total)}${r.night ? ', night times' : ''}.` : '',
       !long && window.GPTTrack ? GPTTrack.line(r, E, { vehicle: w }) : '',
-      `Sent ${tf.format(new Date())} from GPT100 Field.`
+      `Sent ${tf.format(new Date())} from Running Wild Field.`
     ];
     return lines.filter(Boolean).join('\n');
   }
@@ -737,13 +737,13 @@
     // iPhone in Safari: install first, or the map downloads twice (js/intro.js).
     if (window.GPTIntro && GPTIntro.installFirst()) {
       el.innerHTML = `<h2>Install the app first</h2>
-        <p>Add GPT100 Field to your home screen, then save the map from there. On iPhone a map saved in Safari isn't shared with the home screen app, so it would download twice (about ${mb} MB).</p>${GPTIntro.iosSteps('GPT100 Field')}
+        <p>Add Running Wild Field to your home screen, then save the map from there. On iPhone a map saved in Safari isn't shared with the home screen app, so it would download twice (about ${mb} MB).</p>${GPTIntro.iosSteps('GPT100 Field')}
         <button type="button" class="fd-linkbtn" id="fdSaveHere">Save in Safari anyway</button>`;
       $('fdSaveHere').onclick = () => { GPTIntro.allowBrowserSave(); offlineCard(); };
       return;
     }
     el.innerHTML = `<h2>Save the map before you leave signal</h2>
-      <p>The topo map 2 km either side of both courses, so it works with no signal. About ${mb} MB: best on wifi.${st.have ? ` ${st.have} of ${st.total} map squares already saved.` : ''}</p>
+      <p>The topo map 2 km either side of every course, so it works with no signal. About ${mb} MB: best on wifi.${st.have ? ` ${st.have} of ${st.total} map squares already saved.` : ''}</p>
       <button id="fdSaveMap" class="fd-big" type="button">Save map for offline</button>
       <div class="fd-bar" hidden><i></i></div><p class="fd-hint" id="fdSaveMsg"></p>`;
     $('fdSaveMap').onclick = saveMap;
@@ -820,9 +820,9 @@
   if (window.GPTIntro) GPTIntro({
     key: 'rwIntroField', done: offlineCard, quiet: !!(RP && RP.bib),
     steps: [
-      () => ({ title: 'GPT100 Field', html: `<p>For Safety Officers, sweeps, aid station crews and medics out on the course.</p>
+      () => ({ title: 'Running Wild Field', html: `<p>For Safety Officers, sweeps, aid station crews and medics out on the course.</p>
         <p>It tells you exactly where you are on the course, the quickest way out, and sends your location to Event HQ in one tap. Once it's set up it works with no signal.</p>` }),
-      GPTIntro.installStep('GPT100 Field', 'Do this first, before saving the map. On iPhone, the home screen app keeps its own copy, so a map saved here in the browser would have to download again.'),
+      GPTIntro.installStep('Running Wild Field', 'Do this first, before saving the map. On iPhone, the home screen app keeps its own copy, so a map saved here in the browser would have to download again.'),
       GPTIntro.saveStep(offlineCard),
       () => ({ title: '3. How to use it', html: `<ul class="rn-tablist">
         <li><b>Home</b> Your race at a glance: the race clock, the next cut-offs, Safety Officers on post, and big buttons to the map, cut-offs and Send my location.</li>
