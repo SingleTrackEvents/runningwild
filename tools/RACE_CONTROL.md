@@ -1,0 +1,61 @@
+# Race Control setup (Cloudflare)
+
+The Race Control board keeps its incident log, unit status and radio log, and the Risk tab its risk assessments, in a small database on the same Cloudflare Worker that runs the weather refresh (`gpt100-refresh`). It's locked with the medical password, so the public app can't read it, and nothing about incidents goes into the GitHub repository.
+
+Setup takes about 10 minutes, all in the Cloudflare dashboard.
+
+## 1. Update the Worker code
+
+1. In Cloudflare, go to **Workers & Pages**, then **gpt100-refresh**, then **Edit code**.
+2. Delete everything in the editor and paste in the whole of the latest [`refresh-worker.js`](refresh-worker.js) from this folder. It still does the weather refresh, and now Race Control too.
+3. Click **Deploy**.
+
+## 2. Create the database
+
+1. Go to **Storage & Databases**, then **D1 SQL Database**, then **Create**.
+2. **Name:** `gpt100-race-control`. Leave the location as automatic, then **Create**.
+
+You don't need to set up any tables. The Worker creates them the first time Race Control is used.
+
+## 3. Connect the database to the Worker
+
+1. Go to **Workers & Pages**, then **gpt100-refresh**, then **Settings**, then **Bindings**, then **Add binding**, then **D1 database**.
+2. **Variable name:** `DB` (capital letters, exactly). **D1 database:** `gpt100-race-control`.
+3. Click **Add binding**, then **Deploy** if it asks.
+
+## 4. Add the password
+
+1. Still in the Worker, go to **Settings**, then **Variables and Secrets**, then **Add**.
+2. **Type:** Secret. **Variable name:** `RC_PASSWORD`. **Value:** the medical password, exactly as people type it in the Medical tab.
+3. Click **Deploy** (or **Save**).
+
+## 5. Check it
+
+Open the app on a device where the Medical tab is unlocked, go to **Control**, and check the top right shows a green **Live**.
+
+- **"Race Control isn't set up on the Worker yet"** means the `DB` binding or the `RC_PASSWORD` secret is missing.
+- **"Wrong password"** means `RC_PASSWORD` doesn't match the medical password.
+
+## Risk assessments
+
+The Risk tab uses the same database and password. If the Worker was set up before the Risk tab, do step 1 again (paste in the latest `refresh-worker.js` and Deploy); nothing else changes, and the Worker adds its table itself. Until then the Risk tab says the Worker needs the latest code, and keeps assessments on the device.
+
+## The Phones panel
+
+From build 104 the board can send notices to the apps, take help requests from them and show field phones on its map. That needs the latest `refresh-worker.js` (step 1 again) and one more timer for alerts. See [LIVE.md](LIVE.md).
+
+## When the medical password changes
+
+Update `RC_PASSWORD` in the Worker to the new password at the same time, so devices keep syncing, and re-run `tools/import_register.mjs` with the new password (see the README).
+
+## After the event
+
+- **Export** on the Risk tab downloads every risk assessment and its actions.
+- **Export** on the board downloads every incident and the full radio log as a spreadsheet (CSV), for the incident report.
+- To clear the log before the next event, open the `gpt100-race-control` database in Cloudflare, go to **Console**, and run:
+
+  ```
+  DELETE FROM incidents; DELETE FROM units; DELETE FROM log; DELETE FROM ra;
+  ```
+
+  Export first.

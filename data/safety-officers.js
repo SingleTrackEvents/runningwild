@@ -1,0 +1,3 @@
+// Mt Buller SkyRun 2026 posts for the maps (no names): the Safety Officer at Mirimbah Park and the marshals at Craig's
+// Hut and the summit (from 10:00), from the Day 1 crew table. Shift times are a guess to confirm. tools/events/buller/build.py.
+window.GPT100_SO = {"t0":"2026-12-06T07:00:00","n":44,"stations":[{"name":"Mirimbah Park","lat":-37.11087,"lon":146.4008},{"name":"Craig's Hut","lat":-37.1085,"lon":146.53264},{"name":"Mt Buller summit","lat":-37.14465,"lon":146.42591}],"posts":[{"station":"Mirimbah Park","a":1.5,"z":8,"label":"Safety Officer"},{"station":"Craig's Hut","a":1,"z":6,"label":"Marshal"},{"station":"Mt Buller summit","a":3,"z":10,"label":"Marshal"}]};

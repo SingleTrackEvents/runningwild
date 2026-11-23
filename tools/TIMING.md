@@ -1,0 +1,76 @@
+# Timing chips in the app (RaceResult)
+
+The timing team's chip reads give the app a second way to place every runner, alongside the GPS trackers. Each covers for the other: when a tracker goes quiet, is left at home or runs flat, the chips still say which checkpoint the runner last crossed and when. When the chips miss someone, the tracker still has them. For every runner the newest hard fix wins, whichever feed it came from, and the app says how each position was worked out.
+
+The timing decoders at every checkpoint upload over 4G or Starlink, so the reads reach RaceResult's server within moments of the runner crossing.
+
+## 1. What to ask the timing team for
+
+A **Simple API** link to a list, in JSON. In the event file: **Basic Settings**, then **Access Rights / Simple API**, add a list and copy its link. The link is a fixed address on `api.raceresult.com` that works without logging in. It only reads that one list, and it lives in our Cloudflare Worker, never in the app or on a phone.
+
+The list needs these columns (names don't have to match exactly, the app recognises the usual ones):
+
+- **Bib**
+- **Name** (or first name and last name)
+- **Contest** (the race's name: GPT100 Solo/Pairs, GPT50K, Stage 2, GPT14K and so on)
+- **Status** (so withdrawn and did-not-start runners drop off the course)
+- **Gender** and **Age Group** (optional, and worth asking for: see Age category below)
+- **One column per timing point**, holding the **time of day** the runner crossed it (blank until they do). Name each column after the place: Start, Copper Mine, GAR, Mt Difficult Ridgeline, Mt Difficult Rd, Halls Gap, Mt Rosea, Borough Huts, Mt William, Stockyard Track, Jimmy Creek, Yarram Gap, Griffin, Cassidys, Bainggug, Finish. A full date and time, or a Unix time, is fine too.
+
+Ask for the list to cover every contest. One list for everything is simplest. If a timing point is passed twice (the out and back at Jimmy Creek), either two columns or one column with the later time both work.
+
+The timing team's list (Toph at Living It Live, October 2026) is a plain array of rows with the columns Place, Status, Bib, Name ("Nunn, Reece"), Contest, Gender, Start, then one column per timing point with In and Out at the aid stations (CopperMineTrack, GARIN, GAROUT, MTDifficultRd, HallsGapIn, HallsGapOut, RoseaCP, BoroughHutsIn, BoroughHutsOut, MtWilliamIn, MtWilliamOut, JimmyCreekIn, JimmyCreekOut, YarramGap, GriffinFirelineIN, GriffinFirelineOut, CassidysGap, BainggugCPIN, BainggugCPOut, Finish), then Time and Diff. The app reads that as is:
+
+- **Names:** it splits the squashed names, treats In and Out as the same spot (the Out read is the newer fix), and turns "Last, First" names around. Water points without a timing reader (Mt Difficult Ridgeline, Stockyard Track) simply aren't timing points, which is fine.
+- **Contest** is the contest's name. The app matches it to the race by itself: "GPT100 Solo/Pairs" (or anything with 100 or Miler) is the Miler, "GPT50K" the 50k, "Stage 2" or "GPT Stage 2" that stage (a stage race contest with no stage number is taken as the stage under way), "GPT33K" the 33k, "GPT14K" and "GPT6K" the 14k and 6k (both placed on the 14k course), and the 5k and 2k fun runs aren't tracked. A name it can't match is listed in the status line and those runners aren't placed (never taken as the Miler). Name it in `tracking.chipContests` in `data/config.js`, for example `{ 'GPT Multi-Day': 'Stage 2', 7: '14k' }`, or `'none'` for a contest that isn't tracked. A runner the trackers don't know shows their race after their name, for example "Reece Nunn (Miler)".
+- **Status** is read first (blank while running): DNF, DNS, DSQ, OTL (shown as cut off) or finished. When it's blank and Place holds a status instead of a place (DNF, DNS, DSQ, OTL), that's used. A status the app doesn't know is listed in the status line and the runner is kept on course.
+- **Times** are times of day in 24 hour time with no date. On a later day they're written D:HH:MM:SS, D the days past the event's first day (Thursday 5 November in 2026, Stage 1 and the 50k): the Miler's Friday 07:59 start comes as 1:07:59:37. The event's first day is the earliest race start in `data/races.js`. Times with no D: in front hang off their race's start day in `data/races.js` (Melbourne time; the clock time is taken as given, so a test row starting at 08:00 is fine; 26:00:00 is 2 am the day after). The stage race contest ("GPT100 Stage Race Solo") has no stage number and its list holds one stage at a time: the stage comes from the timing points read (Copper Mine Track and GAR are Stage 1, Rosea and Borough Huts Stage 2), and times from an earlier stage than today's aren't used (the status line says so), so yesterday's runners aren't put back on yesterday's course. A GPS fix from before a runner's race day doesn't place them either. Where both providers use a bib for different people (Miler relay teams 618 to 627 in the GPS, Stage Race relay runners in the timing list), `tracking.gpsRaces` in `data/config.js` says which races each GPS event carries, so a tracker only joins a chip runner in one of them. Where the two providers give the same runner different bibs (in 2026 the Miler relay teams were 618 to 627 in the GPS and 14001 to 14009 in the timing list), pair them in `tracking.gpsBibs`, GPS bib to timing list bib (`{ 619: 14002 }`), so their chip times are used and either bib finds them. Check the team names in both lists before race day; leave it blank when every bib agrees. A time of day more than 12 hours earlier than the column before it, with no D: in front, has gone past midnight and is taken as the next day. A full date and time, or a Unix time, still works.
+- **Time and Diff** are the elapsed race time and the gap, not timing points, so they're left out (as are Place, Gender and the like).
+- **Age category** (asked for by the 2026 Safety Officers: other runners don't note bib numbers, so "do you mean the old guy?" is how a runner gets found). Ask the timing team to add an **Age Group** column to the list (RaceResult: the AgeGroup field). The app then shows each runner's age category beside their name wherever a runner is listed or tapped, with their gender letter in front: "M 60 to 69". It reads a column called AgeGroup, Age Group, AG, Age Category or Division, holding the group's name (Youth, Open, Masters, Legends) or its ages ("M40-49", "50-59", "70+"), and shows the ages of the event's own groups from gpt100.com.au/age-groups (under 24, 24 to 39, 40 to 49, 50 to 59, 60 to 69, 70 and over; `tracking.ageGroups` in `data/config.js` changes them, as `[from, to, name]` rows). If the list carries an Age or a year or date of birth instead, the app turns it into the same group and never shows the age itself. The list is read by the public runner app as well as the staff apps, so ask for the Age Group, not dates of birth. Without the column nothing changes. The 2026 list had Gender but no Age Group.
+- **A chip time ahead of the clock** (more than 5 minutes) can't have happened yet: it's ignored and listed in the status line.
+- **Before a race's day** its times of day can only be the timing team's test reads, so they're hung off today (moved back a day if that puts them ahead of the clock) and the status line says so. `tracking.chipDay` (a date, or `'today'`) anchors every race to one day instead, for a rehearsal.
+
+Still to confirm with the timing team: the exact contest name for every race (the stages, 33k, 14k, 6k and the fun runs), the Status values they'll use (DNF, DNS, DSQ, OTL or others), and whether JimmyCreekIn and JimmyCreekOut are the way out to Jimmy Creek and the way back (the app takes them as one stop, In and Out).
+
+The app matches the column names to the course by itself and says in its status line if one didn't match. Add any it can't match to `tracking.chipPoints` in `data/config.js`, for example `{ 'TP7': { km: 99.5 } }` (add `course: '14k'` for that course).
+
+RaceResult answers at most one call a second per link and caches for 10 to 30 seconds, so the Worker reads it every 20 seconds at most and every phone reads from the Worker. Nothing the app does can overload their server.
+
+## 2. Put the link in the Worker
+
+1. In Cloudflare, open the `gpt100-refresh` Worker, then **Settings**, then **Variables and Secrets**, then **Add**.
+2. **Type:** Secret. **Variable name:** `TIMING_URL`. **Value:** paste the whole link, including everything after the `?`.
+3. **Deploy** (or **Save**). Make sure the Worker has the current `tools/refresh-worker.js` pasted in (the `/timing/` relay was added with the chip feed).
+4. Open `https://gpt100-refresh.chad-ad3.workers.dev/timing/` in a browser from the app's site. If it shows the list as JSON, the relay works.
+
+## 3. Turn it on in the app
+
+In `data/config.js`, set `tracking.chip` to `'relay'` and commit (done for GPT100 2026, build 87: the chips start as soon as the `TIMING_URL` secret is in the Worker; until then the status line says the Worker has no TIMING_URL secret yet). From then on every app (staff, field, Medical, Control) reads the chips every 30 seconds and merges them with the trackers. Leave it blank to switch the chips off again.
+
+## 4. How the two feeds are merged
+
+- **The newest hard fix wins.** A GPS fix and a chip read are both facts about where a runner was and when. Whichever is newer gives the position. Finished, withdrawn and did-not-start runners come off the course.
+- **Carried forward at their pace.** A fix older than 3 minutes gets a "likely km now", at the runner's own pace (where they sit between the fastest runner and the cut-offs, from their last two chip reads, or mid-pack until then), along the course and never past the next timing point. If at their pace they'd have reached the next timing point and there's no read there, the app says they're somewhere on that leg and puts the marker in the middle of it.
+- **Late at the next checkpoint.** When a runner is due at their next timing point comes from the splits fitted to how the 2026 field ran (`data/splits.js`, every race): their finish time from their arrival read at their last timing point, then the time at the next one. Time at the aid station is part of the fit, so a long stop isn't counted against the next leg. Past that by 20 minutes (or a quarter of the leg), and with no fresh GPS fix showing them moving, they're flagged late. Past the next point's cut-off (the Miler), or cut-off pace for the leg (other races), overdue. A timing point that hasn't read anyone while points further on have (Copper Mine Track in 2026) is skipped, and other races' starts and finishes aren't anyone's next checkpoint. Tested on 2026, arrivals later than due plus the grace fell from 21% of legs (the old pacing table blend) to 3%. Runners without a start read, or in a race without a fit, keep the pacing table blend.
+- **At an aid station.** Within 300 m of one, a runner who isn't moving or whose tracker has gone quiet is listed under At aid stations (with how long they've been there), not flagged, until they've stayed longer than 9 in 10 runners did there in 2026 (Mt William 50 min, Jimmy Creek and Griffin 45, Halls Gap 40, Borough Huts and Bainggug 35, 30 elsewhere; `tracking.aidStayMin` overrides). In the 2026 Miler, 97% of "not moving" flags and 84% of "tracker gone quiet" flags were runners at aid stations.
+- **Off the course** needs two fixes in a row more than 150 m from the course, over at least 3 minutes (half the 2026 single-fix flags were GPS wobble), and lists the longest off first, with how far and for how long.
+- **A tracker quiet away from the aid stations** heads the list once it's been 30 minutes.
+- **Feed health** (top of the Runner watch on Control, Medical and the Runners panel): a timing point with no reads while points further on have them, chip times ahead of the clock, a race with runners well into the course on GPS and no chip times, a GPS event that's stopped sending while its runners are out, and a timing list that has stopped updating. Control also lists each feed and what it holds, as a pre-race check. The Worker checks the same feeds every 15 minutes in the race window and sends new problems to the phone (`NTFY_TOPIC`, see `ARCHIVE.md`).
+- **A quiet tracker isn't an alarm by itself.** If the chips have a newer read, the runner is accounted for and the app just notes the tracker went quiet. If the chips have nothing newer, they show in the Tracker gone quiet list as before.
+- **On the maps:** solid blue is a fix in the last few minutes; dashed is estimated; grey is a quiet tracker; amber is late at the next checkpoint; dark orange overdue; red not moving. Every marker's popup and every list row say which feed placed the runner and when.
+
+## 5. Rehearse before the link exists
+
+The quickest way: open any app with `?demo=1` (for example `map.html?demo=1`). The made-up field runs the course live in the browser, GPS trackers and timing chips both, with the handover cases below, and nothing to install. See "Demo: run the race in the browser" in the README.
+
+For a feed in the provider's exact files, served from a folder:
+
+```
+node tools/gps_demo_feed.mjs out/demo-gps 60 9      # 60 made-up runners, 9 hours into the Miler, both feeds
+python3 -m http.server 8765                          # from the repo root
+open http://localhost:8765/index.html?gps=http://localhost:8765/out/demo-gps/
+```
+
+The rehearsal feed has runners with no tracker, trackers that went quiet while the chips carried on, runners who stopped, one lot who lost their tracker and stopped 3 hours ago (overdue at the next checkpoint), withdrawals and a checkpoint that missed a runner. Find them with `#bib` in Find, or on the Control board's Runner watch.
+
+To try a timing list on its own (no GPS feed) open the app with `?chip=<address of the JSON list>`. On the live site the same works through the relay with `?chip=relay` once the secret is in the Worker, before `tracking.chip` is set in the config.
