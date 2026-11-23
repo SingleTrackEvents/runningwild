@@ -1,0 +1,8 @@
+{
+  "appId": "au.com.singletrack.runningwild.field",
+  "appName": "RW Field",
+  "webDir": "www",
+  "android": {
+    "useLegacyBridge": true
+  }
+}

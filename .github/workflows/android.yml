@@ -1,0 +1,89 @@
+# Build the Running Wild Field Android test app (the field app with background location, android-app/) and put it on
+# the "android-test" release, so crew can install it from one link:
+# https://github.com/SingleTrackEvents/runningwild/releases/download/android-test/RunningWildField.apk
+name: Android test app
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'android-app/**'
+      - 'field.html'
+      - 'js/**'
+      - 'css/**'
+      - 'data/**'
+      - 'lib/**'
+      - 'icons/**'
+      - '.github/workflows/android.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-test
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      # The same signing key every build, so a new build installs over the last one without uninstalling.
+      - name: Keep the debug signing key
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: runningwild-debug-keystore
+
+      - name: Gather the field app's files
+        run: bash android-app/build-www.sh
+
+      - name: Make the Android project
+        working-directory: android-app
+        run: |
+          npm install --no-audit --no-fund
+          npx cap add android
+          bash patch-android.sh
+          npx cap sync android
+
+      - name: Build the APK
+        working-directory: android-app/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Name it
+        run: |
+          BUILD=$(grep -o "^const BUILD = '[0-9]*'" sw.js | grep -o "[0-9]*")
+          cp android-app/android/app/build/outputs/apk/debug/app-debug.apk RunningWildField.apk
+          echo "BUILD=$BUILD" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RunningWildField-build-${{ env.BUILD }}
+          path: RunningWildField.apk
+
+      - name: Put it on the android-test release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-test
+          name: Running Wild Field (Android test)
+          prerelease: true
+          files: RunningWildField.apk
+          body: |
+            The Running Wild field app for Android, for the Mt Buller tracking test (docs/BULLER_TRACKING_TEST.md).
+            It keeps sharing your position with Race Control with the screen off.
+
+            Install: open this page on the Android phone, tap RunningWildField.apk, then allow the install when Android asks.
+            Then open RW Field, go to Where, and under Show me on the Control map type your call sign and the team code.
+            Allow location (and notifications) when asked.
+
+            App build ${{ env.BUILD }}, from ${{ github.sha }}.

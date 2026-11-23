@@ -119,7 +119,8 @@ function cors(env, req) {
   const origin = req.headers.get('Origin') || '';
   const c = cfg(env);
   const allowed = c.ALLOWED_ORIGIN.split(',').map(s => s.trim());
-  const ok = allowed.includes(origin) || /^http:\/\/localhost(:\d+)?$/.test(origin);
+  // The Android field app sends through native HTTP, with no web origin: it names itself instead.
+  const ok = allowed.includes(origin) || /^http:\/\/localhost(:\d+)?$/.test(origin) || (!origin && req.headers.get('X-RW-App') === 'field-android');
   return {
     ok,
     headers: {
@@ -904,9 +905,12 @@ export default {
     if (url.pathname.startsWith('/archive/')) {
       try { return await archiveApi(req, env, url, c); } catch (e) { return new Response(JSON.stringify({ error: 'Archive: ' + e.message }), { status: 502, headers: c.headers }); }
     }
+    // Race Control doesn't need GitHub; only the weather refresh below does (Running Wild has no weather watch yet).
+    if (url.pathname.startsWith('/rc/')) {
+      try { return await raceControl(req, env, url, c, ctx); } catch (e) { return new Response(JSON.stringify({ error: 'Race Control: ' + e.message }), { status: 502, headers: c.headers }); }
+    }
     if (!env.GITHUB_TOKEN) return new Response(JSON.stringify({ error: 'The GITHUB_TOKEN secret is not set' }), { status: 500, headers: c.headers });
     try {
-      if (url.pathname.startsWith('/rc/')) return await raceControl(req, env, url, c, ctx);
       if (url.pathname === '/status' && req.method === 'GET') {
         return new Response(JSON.stringify({ last: await latestRun(env) }), { headers: c.headers });
       }
@@ -915,7 +919,7 @@ export default {
         if (!c.ok) return new Response(JSON.stringify({ error: 'Not allowed from this site' }), { status: 403, headers: c.headers });
         return new Response(JSON.stringify(await maybeStart(env, url.searchParams.get('models') === '1')), { headers: c.headers });
       }
-      return new Response(JSON.stringify({ ok: true, about: 'GPT100 weather refresh relay' }), { headers: c.headers });
+      return new Response(JSON.stringify({ ok: true, about: 'Running Wild Worker' }), { headers: c.headers });
     } catch (e) {
       return new Response(JSON.stringify({ error: e.message }), { status: 502, headers: c.headers });
     }

@@ -18,7 +18,7 @@
     const q = Q.get('api');
     if (q && local(q)) return q.replace(/\/$/, '');
     if (window.GPTDemo && window.GPTDemo.rcBase) return window.GPTDemo.rcBase;
-    if (local(location.href)) return '';
+    if (local(location.href) && !window.RW_APK) return '';  // (the Android app is served from https://localhost)
     const C = window.GPT100_CONFIG;
     return ((C && C.weather && C.weather.refreshUrl) || '').replace(/\/$/, '');
   }
@@ -29,6 +29,14 @@
   const rid = () => { const a = new Uint8Array(15); (window.crypto || window.msCrypto).getRandomValues(a); return [...a].map(b => (b % 36).toString(36)).join('') + Date.now().toString(36); };
   async function call(path, body, ms) {
     const b = base(); if (!b) throw new Error('no line');
+    // The Android app sends through native HTTP: Android slows a WebView's own requests after 5 minutes in the
+    // background, which would stop the screen-off tracking. It names itself to the Worker, as it has no web origin.
+    const NH = window.RW_APK && window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.CapacitorHttp;
+    if (NH) {
+      const r = await NH.request({ url: b + path, method: body ? 'POST' : 'GET', headers: Object.assign({ 'X-RW-App': 'field-android' }, body ? { 'Content-Type': 'application/json' } : {}), data: body || undefined, connectTimeout: ms || 15000, readTimeout: ms || 15000 });
+      const j = typeof r.data === 'string' ? (() => { try { return JSON.parse(r.data); } catch (e) { return {}; } })() : (r.data || {});
+      return { status: r.status, ok: r.status >= 200 && r.status < 300, j };
+    }
     const ac = window.AbortController ? new AbortController() : null, t = ac && setTimeout(() => ac.abort(), ms || 15000);
     try {
       const r = await fetch(b + path, { method: body ? 'POST' : 'GET', cache: 'no-store', signal: ac ? ac.signal : undefined, headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
@@ -154,7 +162,8 @@
       if (!c.on || !c.name || !c.code || !fix || !base() || Date.now() - lastShare < 55000) return;
       lastShare = Date.now();
       const bat = await battery();
-      const q = load(FQ, []).concat([Object.assign({}, fix, bat)]).slice(-600);
+      // bg: sent while the app wasn't on screen (only the Android app can).
+      const q = load(FQ, []).concat([Object.assign({}, fix, bat, document.hidden ? { bg: true } : {})]).slice(-600);
       save(FQ, q);
       await field.flush();
     },
@@ -179,6 +188,7 @@
   let flushing = false, batt = null;
   // Battery level and charging (Chrome on Android; iPhones don't tell web pages), for the tracking test.
   async function battery() {
+    if (window.RW_BATTERY) { try { return await window.RW_BATTERY(); } catch (e) { return {}; } }  // the Android app's own reading
     try { if (!batt && navigator.getBattery) batt = await navigator.getBattery(); } catch (e) { batt = false; }
     return batt ? { bat: Math.round(batt.level * 100) / 100, charging: !!batt.charging } : {};
   }

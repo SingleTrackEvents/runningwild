@@ -21,6 +21,10 @@ The runner app is left out of this build.
 - **The Worker** (Control board, the line to the phones, the position history): [tools/RUNNING_WILD_WORKER.md](tools/RUNNING_WILD_WORKER.md).
 - **Hosting:** GitHub Pages from this repository. The apps sit beside the GPT100 on `singletrackevents.github.io`, so every cache and saved setting here starts `rw` and the app only clears its own caches.
 
+## The Android test app
+
+`android-app/` wraps the field app as an Android app (Capacitor) with background location, so it keeps sharing with the screen off. GitHub Actions builds it on every change to the field app and puts it on the `android-test` release: https://github.com/SingleTrackEvents/runningwild/releases/download/android-test/RunningWildField.apk
+
 ## Course data
 
 `python3 tools/events/buller/build.py <folder of GPX files>` builds the Buller courses, races, cut-offs and posts into `data/` from Joe's GPX files. Then `node tools/fetch_topo_tiles.mjs` saves the topo map along them for offline use (in this cloud environment, run it with `NODE_USE_ENV_PROXY=1`).

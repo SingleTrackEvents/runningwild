@@ -41,7 +41,7 @@ globalThis.fetch = (u, init) => {
 };
 const FEEDS = process.env.FEEDS || 'http://127.0.0.1:8766/';
 const env = {
-  DB, GITHUB_TOKEN: 'local', RC_PASSWORD: process.env.RC_PASSWORD || 'local-test',
+  DB, GITHUB_TOKEN: process.env.GITHUB_TOKEN === undefined ? 'local' : process.env.GITHUB_TOKEN, RC_PASSWORD: process.env.RC_PASSWORD || 'local-test',
   TIMING_URL: process.env.TIMING_URL || FEEDS + 'live/timing.json', GPS_HOST: process.env.GPS_HOST || FEEDS,
   ALLOWED_ORIGIN: process.env.ALLOWED_ORIGIN || 'http://127.0.0.1:8765,http://localhost:8765',
   ARCHIVE_FROM: '2020-01-01T00:00:00+11:00', ARCHIVE_TO: '2100-01-01T00:00:00+11:00', ARCHIVE_GPS: '', SITE_CONFIG: 'http://127.0.0.1:1/none',

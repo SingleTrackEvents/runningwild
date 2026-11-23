@@ -815,7 +815,8 @@
     before: () => { if (tab !== 'map') setTab('map'); map.invalidateSize(); if (pendingFit) { map.fitBounds(...pendingFit); pendingFit = null; } },
     opened: on => { if (on && fs && fs.on()) fs.toggle(); document.body.classList.toggle('fd-rp-on', on); },
     none: `<p class="muted">Live tracking isn't set up for this race yet. Once the GPS trackers or timing chips are linked, every runner shows here and on the map. To see how it looks, <a href="field.html?demo=1">run the demo</a>: made-up runners on the course, GPS and chips both.</p>` });
-  window.GPTField = { map, show: RP ? RP.show : null };
+  // gps: a fix from elsewhere (the Android app's background location, android-app/apk.js) goes the same way as the phone's own.
+  window.GPTField = { map, show: RP ? RP.show : null, gps: p => gotFix(p) };
   // First-time intro and how-to (and the ? button).
   if (window.GPTIntro) GPTIntro({
     key: 'rwIntroField', done: offlineCard, quiet: !!(RP && RP.bib),
@@ -874,5 +875,6 @@
   if (C.tracking && C.tracking.url) { const t = $('fdTrack'); t.hidden = false; t.innerHTML = `<a class="btn" href="${esc(C.tracking.url)}" target="_blank" rel="noopener">${esc(C.tracking.label || 'Live tracking')}</a>${C.tracking.credit && C.tracking.credit.name ? ` <span class="fd-hint">by ${C.tracking.credit.url ? `<a href="${esc(C.tracking.credit.url)}" target="_blank" rel="noopener">${esc(C.tracking.credit.name)}</a>` : esc(C.tracking.credit.name)}</span>` : ''}`; }
   function netStatus() { $('net').hidden = navigator.onLine; }
   addEventListener('online', netStatus); addEventListener('offline', netStatus); netStatus();
-  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { }));
+  // (Not in the Android app: its files are already on the phone, and a service worker would hold back its updates.)
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !window.RW_APK) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { }));
 })();

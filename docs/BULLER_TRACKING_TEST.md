@@ -65,7 +65,11 @@ Tell them: the app stops sending when the screen sleeps or another app is in fro
 
 ## 6. The Android test app
 
-An Android build of the field app that keeps sending positions with the screen off. It's a test build, installed from a download link (Android asks you to allow the install). iPhones can't install test builds without an Apple developer account, so iPhone crew use the web app.
+An Android build of the field app that keeps sending positions with the screen off, with a notification while it does. It's a test build, installed from one link (Android asks you to allow the install):
+
+https://github.com/SingleTrackEvents/runningwild/releases/download/android-test/RunningWildField.apk
+
+GitHub builds it from `android-app/` whenever the field app changes (`.github/workflows/android.yml`). In the tracks spreadsheet its rows say `apk` under app, and `yes` under background when the screen was off. iPhones can't install test builds without an Apple developer account, so iPhone crew use the web app.
 
 Put it on at least two Android phones that carry the web app too, so the two can be compared from the same pocket.
 

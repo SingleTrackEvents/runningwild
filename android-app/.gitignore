@@ -1,0 +1,5 @@
+# Made by build-www.sh and `npx cap add android` on every build (see .github/workflows/android.yml).
+www/
+android/
+node_modules/
+package-lock.json

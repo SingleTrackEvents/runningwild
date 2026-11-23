@@ -1,0 +1,19 @@
+{
+  "name": "runningwild-field-android",
+  "private": true,
+  "description": "Running Wild Field as an Android app, for the tracking test: background location with the screen off.",
+  "scripts": {
+    "www": "bash build-www.sh",
+    "android": "bash build-www.sh && cap sync android"
+  },
+  "dependencies": {
+    "@capacitor-community/background-geolocation": "1.3.1",
+    "@capacitor/android": "7.6.10",
+    "@capacitor/core": "7.6.10",
+    "@capacitor/device": "7.0.5",
+    "@capacitor/local-notifications": "7.0.7"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "7.6.10"
+  }
+}
