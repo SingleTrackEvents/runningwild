@@ -1,12 +1,12 @@
 # Running Wild Safety App: Scope
 
-Draft v0.1, 21 November 2026. Prepared for Chad Freak, Operations Manager.
+Draft v0.2, 23 November 2026. v0.2 records the decisions on the scope questions (section 9) and adds planning for race rego and volunteer rego (section 10). Prepared for Chad Freak, Operations Manager.
 
 This scopes a safety app for the SingleTrack Running Wild series, built on what the GPT100 Safety app already does. It covers what carries over, what has to change so one app runs every Running Wild event, what's new, and a build plan against the season dates.
 
 Built from: the GPT100 app ([SingleTrackEvents/GPT100](https://github.com/SingleTrackEvents/GPT100), build as at 16 November 2026), the Day 1 notes (17 November) and the Day 2 notes (18 November).
 
-"To decide" marks something that needs a call before we build it. The full list is in section 9.
+The decisions made on 23 November are in section 9. Linking to race rego and volunteer rego is not in this build, but section 10 sets out how we build now so it can link later.
 
 ## 1. What we're building
 
@@ -58,7 +58,7 @@ The GPT100 has a Race Control room, a response team at three bases and dozens of
 The GPT100 used GPS trackers on every Miler and chip timing at the mats. Most Running Wild events won't have trackers (Day 2: phones trialled at Buller; Razorback about 20 trackers; Alpine Challenge, as a premier event, dedicated trackers).
 
 - **Phone tracking, opt-in.** Runners and field crews share their position from the app with a code. Chad's Safety Officer opt-in tracking is the starting point.
-- **The hard limit.** A web app (which is what the GPT100 app is) can't send a position while the phone is locked or the app is in the background. On the GPT100 that's why Follow me needs Keep screen on. That's fine for a Safety Officer at a post with a battery pack, but not for a runner for 6 hours. Reliable runner tracking from phones needs an installed app (iPhone and Android) with background location. **To decide** (see 9).
+- **The hard limit.** A web app (which is what the GPT100 app is) can't send a position while the phone is locked or the app is in the background. On the GPT100 that's why Follow me needs Keep screen on. That's fine for a Safety Officer at a post with a battery pack, but not for a runner for 6 hours. **Decided:** season 1 stays a web app, so runner phone tracking is best effort, with trackers at Razorback and Alpine Challenge. An App Store and Google Play app for background location comes later, alongside rego (section 10).
 - **Mixed feeds.** The same event may have trackers on some runners, phones on others and chips at a few mats. The GPT100 app already blends GPS and chips; it needs to take phones as a third feed.
 - **Battery and reception.** No reception at Snow Gum Run, patchy at the Prom and Razorback. Positions queue on the phone and send when there's signal, and the app says how old every position is.
 
@@ -85,7 +85,7 @@ The GPT100 response times lean on data that took a lot of work to gather: Parks 
 
 - **A setup tool.** Load a GPX for each course, the aid stations and posts from a spreadsheet, and the tool fetches what3words, heights, drive times and map tiles, and flags what needs checking by hand.
 - **Fill gaps safely.** Where track grades or helicopter sites don't exist for a course (the resorts, for example), the app says "not yet assessed" and uses the slower carry-out factor, as the GPT100 app already does.
-- **Who sets up an event.** **To decide** (see 9): only Chad from the command line, or Julie and the team from a spreadsheet template.
+- **Who sets up an event.** **Decided:** Chad runs the setup scripts in season 1. The spreadsheet template is built during the season so Julie and the team can set up events from season 2.
 
 ### 3.7 Partners on the course
 
@@ -94,7 +94,7 @@ The GPT100 response times lean on data that took a lot of work to gather: Parks 
 
 ### 3.8 Content
 
-- **Help tab.** The GPT100 Help tab is in five languages for its international field. Running Wild may only need English. **To decide.**
+- **Help tab.** **Decided:** English only. The GPT100's language setup stays in the code, so a language can be added for an event that needs it.
 - **Schedule and gear** per event, from each event's page on singletrack.com.au.
 - **Crew mode** only where the event allows crewing (likely Alpine Challenge, not the shorter events).
 
@@ -130,36 +130,77 @@ Most of it. The GPT100 app is about 10,000 lines of tested code and a lot of it 
 ## 6. Out of scope for this build
 
 - Registration (Race Roster stays), the volunteer platform (Chad's iVolunteer replacement, from January) and results. The app links to them.
-- One SingleTrack login across rego, volunteering and the app (Day 2). We build so it can plug in later, but not now.
-- Buffalo Stampede and the GPT100 themselves. **To decide** whether they move onto this app later (see 9).
+- One SingleTrack login across rego, volunteering and the app (Day 2). We build so it can plug in later (section 10), but not now.
+- Buffalo Stampede and the GPT100 themselves. Whether they move onto this app is decided after the Prom (see 9). The code stays event-neutral so that stays an option.
 
 ## 7. How we build it
 
-**Recommendation:** start this repository from a copy of the GPT100 app, then pull everything GPT-specific out into a GPT100 event pack. The core then reads any event pack. If that works, the GPT100 2027 (and Buffalo) can become event packs in the same app, and we stop maintaining two codebases. We leave the live GPT100 repository untouched until then.
+Start this repository from a copy of the GPT100 app, then pull everything GPT-specific out into a GPT100 event pack. The core then reads any event pack. We leave the live GPT100 repository untouched. After the Prom we decide whether the GPT100 2027 and Buffalo become event packs in this app, so we'd only maintain one codebase.
 
 Keep what works on the GPT100: plain web app (no build step), Leaflet maps, GitHub Pages hosting, the Cloudflare Worker for the live line, Race Control database and relays, and the crash tests before every release.
 
-The one place this may change is phone tracking. If runners need to be tracked with their phones locked, we wrap the runner and field apps as an installed app (one code base, App Store and Google Play) for background location. That brings store accounts, review times and privacy wording, so it is the biggest call in this scope.
+Season 1 keeps the GPT100's shared medical password and team codes, and the app stays on GitHub Pages next to the GPT100. Both are quick and proven. Both get replaced when rego arrives (section 10), so we build them in one place each, behind the Worker, to keep that swap small.
+
+The App Store and Google Play app (for runners' background location) waits until rego and volunteer rego, when people need one login on their phone anyway.
 
 ## 8. Build plan
 
 | Phase | Ready for | What ships |
 | --- | --- | --- |
-| 0. Trial | Mt Buller, 6 Dec 2026 (15 days away) | Keep it small: the GPT100 field app pointed at the Buller course, with the Safety Officer opt-in tracking trial and Find. No new core. Goal is learning, not a product |
+| 0. Tracking test | Mt Buller, 6 Dec 2026 | The GPT100 field app pointed at the Buller course, to test Safety Officer and phone tracking: battery use, how often fixes come through, Starlink, and how it looks on the Control map. No new build |
 | 1. Core | Kilcunda, 31 Jan 2027 | Event packs and picker, several courses per event, staff Find, field app, runner app (map, aid stations, Help, Schedule, Gear), Control on a phone with push alerts, weather with per-event triggers, setup tool v1. Kilcunda and Buller packs built |
 | 2. No signal | Snow Gum Run, 28 Feb 2027, and Razorback, 13 Mar 2027 | Checkpoint and sweep logging offline, who's still out, queued positions, trackers for Razorback merged with phones |
 | 3. The big ones | Alpine Challenge, 3 Apr 2027, and Wilsons Prom, 1 May 2027 | Full Risk tab, medical plan per event, ASR and partner access, tides for the Prom, road crossings, dedicated tracker feed for Alpine |
-| 4. Review | After the Prom | Season debrief, then decide on moving GPT100 2027 and Buffalo onto the same app |
+| 4. Review | After the Prom | Season debrief. Decide on moving GPT100 2027 and Buffalo onto this app. Hand event setup to the team with the spreadsheet template. Plan the rego and volunteer rego link (section 10) |
 
 Each phase finishes with a rehearsal using the in-app demo (made-up runners played through the event) and the crash tests, at least a week before the event.
 
-## 9. Decisions needed
+## 9. Decisions
 
-1. **Buller.** Trial a cut-down version at Buller in 15 days, or start properly at Kilcunda and use Buller only to test phone tracking?
-2. **Runner phone tracking.** Is a web app (screen on, best effort) enough for Running Wild, or do we need an installed app with background location? This sets the build approach.
-3. **One app for everything.** Do we aim to move the GPT100 2027 and Buffalo onto this app later, or keep Running Wild separate?
-4. **Who sets up an event.** Chad only, or Julie and the team from a spreadsheet template?
-5. **Languages.** English only for Running Wild, or keep the GPT100's five?
-6. **Which faces at which events.** Does every event get the runner app, or only the bigger ones (Razorback, Alpine Challenge, the Prom)?
-7. **Address.** Its own address (for example app.singletrack.com.au) or alongside the GPT100 on GitHub Pages? The what3words key has to allow whichever we choose.
-8. **Data.** Does Parks Victoria or Alpine Resorts Victoria have track grades and emergency markers for the alpine and Prom courses, as we got for the Grampians?
+Made on 23 November 2026.
+
+| # | Question | Decision |
+| --- | --- | --- |
+| 1 | What happens at Buller? | Tracking test only. The GPT100 field app on the Buller course, testing Safety Officer and phone tracking. The proper build starts for Kilcunda |
+| 2 | How do we track runners? | Web app now, App Store and Google Play app later. Runner phone tracking is best effort in season 1, with trackers at Razorback and Alpine Challenge |
+| 3 | Who sets up an event? | Chad in season 1, using setup scripts. The spreadsheet template is ready for the team from season 2 |
+| 4 | Languages? | English only, with the language setup kept in the code |
+| 5 | One app for everything? | Decide after the Prom. Keep the code event-neutral so GPT100 and Buffalo can move on if we choose |
+| 6 | Logins? | Keep the GPT100's shared passwords and team codes for season 1 |
+| 7 | Which events get the runner app? | Every event |
+| 8 | Where does the app live? | GitHub Pages for now, next to the GPT100 |
+
+Still open:
+
+- **Course data.** Does Parks Victoria or Alpine Resorts Victoria have track grades and emergency markers for the alpine and Prom courses, as we got for the Grampians? Owner to confirm. Without them those courses use the "not yet assessed" carry-out times.
+
+## 10. Planning for race rego and volunteer rego
+
+Linking this app to race rego and volunteer rego is not in this build. It's where we're heading: one SingleTrack login across rego, volunteering and the app (Day 2), with Chad's volunteer platform starting in January and the rego platform after it.
+
+What we do now costs little and saves a rebuild later.
+
+### 10.1 Build now
+
+- **Events and races have fixed IDs.** Every event pack and race gets an ID that doesn't change from year to year. We store Race Roster's event and race IDs against them now, and our own rego's later.
+- **Runners come in through one import.** Each event loads its runner list (bib, name, race, wave, phone, and up to three crew contacts, which Day 1 asked Race Roster to collect) from a Race Roster export. When our own rego exists it fills the same shape, so nothing in the app changes. The list is locked behind the medical password, like the GPT100's medical plan, since Day 1 found staff couldn't reach runners overnight because few people had the numbers.
+- **Crew come in through one import.** The volunteer roster (who's on which Safety Officer post, checkpoint, sweep or aid station, and when) loads the same way, from iVolunteer now and from the new volunteer platform from January. The field app can then show a volunteer their post, and Find knows who is on duty where.
+- **One way in to the data.** Every read and write of private data goes through the Worker, not straight from the page. When passwords give way to logins, only the Worker changes.
+- **Every record names a person and an event.** Incidents, checkpoint reads, help requests and positions are stored against a bib or crew call sign and an event ID, so they can later be tied to a SingleTrack account.
+
+### 10.2 What the link brings later
+
+| From race rego | From volunteer rego |
+| --- | --- |
+| A runner opens the app already signed in, on their own event, race and bib | A volunteer opens the app on their own shift and post, with their role brief |
+| Emergency contacts and medical notes, with consent, straight to the medical team | Check-in and in-position times recorded in the app (a Day 2 volunteer platform requirement) |
+| Rego check-in and the Telstra SIM check in the app | Shift changes and notices pushed to that volunteer's phone |
+| Phone tracking consent given at entry | Safety Officer kit and briefing sign-off |
+| Results and history on the runner's profile | Volunteer history and Hall of Fame |
+
+### 10.3 What has to happen first
+
+- **Architecture and data protection review.** Day 2 agreed to bring Joe Brand in on architecture and data protection before any rego build, and Michelle asked for an expert-designed architecture with redundancy. The app joins that review before it links to anything: it holds runners' locations, phone numbers and medical details.
+- **Logins replace shared passwords.** SingleTrack Google accounts for staff, and the shared login for runners and volunteers.
+- **The App Store and Google Play app.** Background location for runners, and a signed-in app people keep on their phone all season.
+- **Moving off GitHub Pages.** A SingleTrack address (for example app.singletrack.com.au) beside rego and volunteer rego. Moving resets runners' saved maps and home screen icons, so we move between seasons, not mid-season.
