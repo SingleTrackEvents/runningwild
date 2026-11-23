@@ -58,9 +58,9 @@ Tell them: the app stops sending when the screen sleeps or another app is in fro
 
 ## 5. On the day and after
 
-- **Race Control:** keep the Control board open in the village (staff app, Medical tab, unlock, then Control). The field phones show as blue tags with their km and battery.
+- **Race HQ:** keep the staff app's **Control** tab open in the village (type the staff password once). The crew show on the map and under Crew, blue for phones and purple for inReach, with their km, battery and when last heard. Anyone quiet too long is flagged. Log anything that happens with **Injury or sick**, **Lost or overdue** or **Note**, and tap **Sorted** when it's dealt with.
 - **During:** note anything odd (a phone that vanished, a wrong km) with the time, in the radio log.
-- **After:** press **Download tracks** in the Phones panel, before anyone clears the database. Ask each crew member two questions: was it easy, and did it ever get in the way?
+- **After:** on the Control tab press **Settings**, then **Tracks** and **Log** under Downloads, before anyone clears the database. Ask each crew member two questions: was it easy, and did it ever get in the way?
 - **Review:** Claude can turn the spreadsheet into a short report: gaps by place, signal dead spots on the map, battery an hour, and web against the Android app.
 
 ## 6. The Android test app

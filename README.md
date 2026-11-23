@@ -11,7 +11,7 @@ This build is the GPT100 field app and Control board on the Mt Buller SkyRun cou
 | Page | For |
 | --- | --- |
 | `field.html` | Safety Officers, marshals, sweeps and staff on the course: where am I, the way out, send my location, and Show me on the Control map |
-| `index.html` | Race Control: Find (course km and aid stations), Medical (unlock with the staff password), Control (incidents, notices, field phones on the map, Download tracks) |
+| `index.html` | Staff app: Find (course km and aid stations), Weather, and Control (Race HQ: the crew on the map, the next cut-offs, a quick log of injuries, lost runners and notes, and Settings for notices, help requests, the team code and downloads) |
 | `map.html` | The whole course on one screen |
 
 The runner app is left out of this build.

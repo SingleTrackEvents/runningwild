@@ -538,7 +538,7 @@
     if (!r.best) {
       const asStop = x => x ? `${esc(x.a.name)}, ${one(x.distKm)} km, about ${G.fmt(x.walk)} on foot` : 'none';
       $('result').innerHTML = `<div class="card"><h3>${esc(G.name)} km ${one(r.km)}</h3>
-        <p class="notice warn">This event has no drive times in the app yet, so Find can't suggest a team or an ETA. Send the nearest crew from the Control board's map.</p>
+        <p class="notice warn">This event has no drive times in the app yet, so Find can't suggest a team or an ETA. Send the nearest crew from the Control tab's map.</p>
         <p>Aid station before: <b>${asStop(r.aid && r.aid.prev)}</b><br>Aid station after: <b>${asStop(r.aid && r.aid.next)}</b></p>
         <p class="muted">Position ${r.lat.toFixed(5)}, ${r.lon.toFixed(5)}. Height ${Math.round(r.ele)} m.</p></div>`;
       return;
@@ -595,7 +595,7 @@
       <a class="btn" id="btnWa" href="#" target="_blank" rel="noopener">WhatsApp</a>
       <button class="btn" id="btnShare" type="button">Share</button>
       <a class="btn" href="${dir}" target="_blank" rel="noopener">Directions</a>
-      ${window.RaceControl && window.RaceControl.available() ? '<button class="btn" id="btnRc" type="button">Log incident</button>' : ''}</div>`;
+      ${window.RaceControl && window.RaceControl.available() ? '<button class="btn" id="btnRc" type="button">Log at HQ</button>' : ''}</div>`;
     h += `<div class="card"><h3>Message</h3><p class="script" id="script">${esc(radioScript(r))}</p></div>`;
     h += '<div id="wxNear"></div>';
     if (r.results.length > 1) {
@@ -753,19 +753,18 @@
   if (window.GPTIntro) GPTIntro({
     key: 'rwIntroSafety',
     steps: [
-      () => ({ title: 'Running Wild Safety', html: `<p>The staff app for race control, the medical team and Safety Officers.</p>
-        <p>Find the fastest team for any casualty on the course, keep an eye on the weather triggers, see the medical plan, and run the Race Control board.</p>` }),
+      () => ({ title: 'Running Wild Safety', html: `<p>The staff app for Race HQ.</p>
+        <p>Find any spot on the course, keep an eye on the weather triggers, and run Race HQ on the Control tab: where the crew are, what's open, and one quick log.</p>` }),
       GPTIntro.installStep('Running Wild Safety'),
       () => ({ title: '2. Find a casualty', html: `<ol class="rn-steps">
         <li>Type what you've been told: a <b>km</b> (pick the runner's race first if it's a stage or shorter race), <b>coordinates</b> or a <b>what3words</b> address. Or use <b>My location</b>, or <b>Pick on map</b>.</li>
         <li>You get one answer: <b>which team to send</b>, where to park (gated roads flagged), the walk in and the <b>ETA</b>, with the backup team and the stretcher carry-out time.</li>
         <li>It also shows the <b>nearest Safety Officers on foot</b>, the weather there, and the climb either side on the profile.</li>
-        <li><b>WhatsApp</b> sends the job to the group, <b>Directions</b> opens Google Maps to the parking spot, and <b>Log incident</b> puts it on the Race Control board.</li>
+        <li><b>WhatsApp</b> sends the job to the group, <b>Directions</b> opens Google Maps to the parking spot, and <b>Log at HQ</b> starts an Injury entry on the Control tab.</li>
       </ol><p class="fd-hint">More than 2 hours to reach, or 4 hours with the carry-out? A red warning says to escalate early.</p>` }),
       () => ({ title: '3. The other tabs', html: `<ul class="rn-tablist">
-        <li><b>Weather</b> The race triggers (heat, wind, rain, storms, cloud), BOM warnings, fires nearby, radar and the models. <b>Refresh now</b> gets the latest; <b>Share update</b> writes the daily update.</li>
-        <li><b>Medical</b> Needs the medical password. Who's on duty where and when, the vehicles, and the plan for any time.</li>
-        <li><b>Control</b> Needs the medical password. The Race Control board: incidents, teams, the radio log and live tracking. Its Phones panel sends notices to the apps, takes help requests from them and shows field phones on the map.</li>
+        <li><b>Weather</b> The race triggers (heat, wind, rain, storms, cloud), BOM warnings, fires nearby, radar and the models. <b>Share weather update</b> writes the daily update.</li>
+        <li><b>Control</b> Race HQ, with the staff password. The map with the crew's phones and inReach units, the next cut-offs, three buttons to log an <b>Injury or sick</b> runner, a <b>Lost or overdue</b> runner or a <b>Note</b>, everything still open (tap <b>Sorted</b> when it is), and the log. <b>Settings</b> has the notices to the phones, help requests, the team code and the downloads.</li>
       </ul><p class="fd-hint">Tap <b>?</b> at the top any time to see this again. Planning guide only: in an emergency call 000.${C.tracking && C.tracking.credit && C.tracking.credit.name ? ` Timing and tracking by ${C.tracking.credit.url ? `<a href="${esc(C.tracking.credit.url)}" target="_blank" rel="noopener">${esc(C.tracking.credit.name)}</a>` : esc(C.tracking.credit.name)}.` : ''}</p>` })
     ]
   });
