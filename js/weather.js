@@ -176,7 +176,7 @@
   function build() {
     $('wxBody').innerHTML = `<div class="wx-layout">
       <div class="wx-panel">
-        <div class="wx-head"><h1>Weather</h1><p id="wxUpd" class="wx-upd"></p>${W.refreshUrl ? '<div class="wx-refresh"><button id="wxRefresh" class="btn small" type="button">Refresh now</button><span id="wxRefreshMsg" class="wx-upd" role="status"></span></div>' : ''}</div>
+        <div class="wx-head"><h1>Weather</h1><p id="wxUpd" class="wx-upd"></p>${W.refreshUrl && W.refreshButton ? '<div class="wx-refresh"><button id="wxRefresh" class="btn small" type="button">Refresh now</button><span id="wxRefreshMsg" class="wx-upd" role="status"></span></div>' : ''}</div>
         <div id="wxWarn"></div>
         <div class="seg wx-views" role="tablist">
           <button data-v="triggers" role="tab">Triggers</button><button data-v="timeline" role="tab">Timeline</button><button data-v="sim" role="tab">Simulator</button><button data-v="models" role="tab">Models</button>
@@ -240,96 +240,103 @@
   // ---------- Triggers ----------
   const WORD = { met: 'Met', close: 'Getting close', ok: 'Clear', nodata: 'No data' };
   function pill(st, advisory) { return `<span class="wx-pill st-${st}">${advisory && st === 'close' ? 'Advisory' : WORD[st]}</span>`; }
+  // One section that folds to a single line on a phone: the title, then what matters in a few words.
+  function fold(id, title, summary, body, open, tone) {
+    return `<details class="wx-fold${tone ? ' wx-fold-' + tone : ''}" id="wxf-${id}"${open ? ' open' : ''}><summary><b>${title}</b><span>${summary}</span></summary><div class="wx-fold-body">${body}</div></details>`;
+  }
+  const short = sk => /48/.test(sk + (latest.triggers[sk] || {}).label) ? 'Next 48 h' : 'Race day';
   function triggersHTML() {
-    const L = latest, tr = L.triggers;
-    let h = '<div class="wx-share-row"><button class="btn primary wx-share-btn" id="wxShare" type="button">Share weather update</button>' +
-      (window.RiskTab ? '<button class="btn wx-share-btn" id="wxRisk" type="button">Start risk assessment</button>' : '') + '</div><div id="wxSharePanel"></div>';
-    h += '<div class="wx-overall">' + Object.entries(tr).map(([k, s]) =>
-      `<button class="wx-scope st-${s.status}${trigScope === k ? ' on' : ''}" data-scope="${k}"><span>${esc(s.label)}</span><b>${WORD[s.status]}</b></button>`).join('') + '</div>';
+    const L = latest, tr = L.triggers, scopes = Object.entries(tr);
+    let h = '<div class="wx-overall">' + scopes.map(([k, s]) =>
+      `<div class="wx-scope st-${s.status}" title="${esc(s.label)}${s.from && s.to ? ': ' + WX.fmtTime(s.from) + ' to ' + WX.fmtTime(s.to) : ''}"><span>${short(k)}</span><b>${WORD[s.status]}</b></div>`).join('') + '</div>';
 
-    // Official sources first.
-    h += '<h2 class="wx-h">Official warnings</h2>';
+    // The triggers: one row each, with every scope's status side by side. A row opens for the detail.
+    h += `<div class="wx-tlist"><div class="wx-thead"><span>Trigger</span>${scopes.map(([sk]) => `<span>${short(sk)}</span>`).join('')}</div>` + WX.ORDER.map(k => {
+      const rows = scopes.map(([sk, s]) => [sk, s, s.triggers[k]]).filter(x => x[2]);
+      if (!rows.length) return '';
+      const worst = ['met', 'close', 'ok', 'nodata'].find(st => rows.some(x => x[2].status === st)) || 'ok';
+      return `<details class="wx-trow st-${worst}"${worst === 'met' ? ' open' : ''}><summary><b>${esc(rows[0][2].label)}</b>${rows.map(x => pill(x[2].status, x[2].advisory)).join('')}</summary>
+        ${rows.map(([sk, s, r]) => {
+          const w = r.worst, where = w && w.at ? (w.km != null ? `km ${w.km}${w.place ? ' ' + esc(w.place) : ''}, ` : '') + (k === 'fire' ? '' : WX.fmtTime(w.at)) : '';
+          return `<button class="wx-card st-${r.status}" data-key="${k}" ${w && w.km != null ? `data-km="${w.km}" data-t="${w.at}"` : ''}>
+            <div class="wx-card-top"><b>${short(sk)}</b>${pill(r.status, r.advisory)}</div>
+            ${r.text ? `<p>${esc(r.text)}</p>` : ''}
+            ${where && r.status !== 'nodata' ? `<p class="wx-where">${where}${w.runners ? ' <span class="chip">Runners on course</span>' : ''}</p>` : ''}
+            ${r.status === 'nodata' && r.note ? `<p class="wx-where">${esc(r.note)}</p>` : ''}
+            ${r.chance && r.status !== 'nodata' ? `<p class="wx-where">Ensembles: ${r.chance.p ? 'up to ' + r.chance.p + '% ' + esc(r.chance.what || 'reach the trigger') + ` (km ${r.chance.km}, ${WX.fmtTime(r.chance.at)})` : 'none of ' + (ensN() || 'the') + ' forecasts ' + esc(r.chance.what || 'reach the trigger')}</p>` : ''}
+          </button>`;
+        }).join('')}
+        <p class="wx-rule">${esc(rows[0][2].rule)}${rows[0][2].proposed ? ' <em>(proposed trigger)</em>' : ''}</p>${k === 'cloud' ? liveCloudHTML() : ''}</details>`;
+    }).join('') + '<p class="wx-note">Tap a trigger for where and when. Tap the detail to see it on the timeline.</p></div>';
+
+    // Then the official sources and the rest, each folded to one line.
     if (L.warnings && L.warnings.items) {
       const rel = L.warnings.items.filter(w => w.relevant), other = L.warnings.items.length - rel.length;
-      h += rel.length ? rel.map(w => `<a class="wx-bom" href="${esc(w.link || 'https://www.bom.gov.au/vic/warnings/')}" target="_blank" rel="noopener"><b>${esc(w.title)}</b><span>${esc(w.date)}</span></a>`).join('')
-        : '<p class="wx-ok">No BOM warnings near the course.</p>';
-      if (other) h += `<p class="wx-note">${other} other BOM warning${other > 1 ? 's' : ''} in Victoria. <a href="https://www.bom.gov.au/vic/warnings/" target="_blank" rel="noopener">All Victorian warnings</a></p>`;
-    } else h += '<p class="notice warn">BOM warnings aren\'t coming through. Check <a href="https://www.bom.gov.au/vic/warnings/" target="_blank" rel="noopener">bom.gov.au/vic/warnings</a>.</p>';
-    if (L.fire && L.fire.days && L.fire.days.length) {
-      h += `<table class="wx-fire"><thead><tr><th>CFA</th>${W.districts.map(d => `<th>${esc(d)}</th>`).join('')}</tr></thead><tbody>` +
-        L.fire.days.map(d => `<tr><td>${WX.fmtDay(WX.parseLocal(d.date))}</td>${W.districts.map(k => { const r = d.districts[k] || {}; return `<td><span class="fdr fdr-${(r.rating || '').replace(/\s/g, '').toLowerCase()}">${esc(WX.titleCase(r.rating || 'n/a'))}</span>${r.tfb ? ' <b class="tfb">Total Fire Ban</b>' : ''}</td>`; }).join('')}</tr>`).join('') +
-        '</tbody></table><p class="wx-note"><a href="https://www.cfa.vic.gov.au/warnings-restrictions/total-fire-bans-and-ratings" target="_blank" rel="noopener">CFA fire ratings</a> · <a href="https://www.epa.vic.gov.au/for-community/airwatch" target="_blank" rel="noopener">EPA AirWatch</a> · <a href="https://www.bom.gov.au/products/IDR023.loop.shtml" target="_blank" rel="noopener">Radar</a></p>';
-    }
-    h += incidentsHTML() + obsHTML() + precisHTML();
+      h += fold('warn', 'BOM warnings', rel.length ? `<b class="wx-bad">${rel.length} near the course</b>` : 'None near the course',
+        (rel.length ? rel.map(w => `<a class="wx-bom" href="${esc(w.link || 'https://www.bom.gov.au/vic/warnings/')}" target="_blank" rel="noopener"><b>${esc(w.title)}</b><span>${esc(w.date)}</span></a>`).join('') : '<p class="wx-ok">No BOM warnings near the course.</p>') +
+        `<p class="wx-note">${other ? other + ' other BOM warning' + (other > 1 ? 's' : '') + ' in Victoria. ' : ''}<a href="https://www.bom.gov.au/vic/warnings/" target="_blank" rel="noopener">All Victorian warnings</a></p>`, rel.length > 0, rel.length ? 'bad' : '');
+    } else h += fold('warn', 'BOM warnings', '<b class="wx-bad">Not coming through</b>', '<p>Check <a href="https://www.bom.gov.au/vic/warnings/" target="_blank" rel="noopener">bom.gov.au/vic/warnings</a>.</p>', true, 'bad');
 
-    for (const [sk, s] of Object.entries(tr)) {
-      h += `<h2 class="wx-h" id="wxs-${sk}">${esc(s.label)} ${s.from && s.to ? `<span class="wx-when">${WX.fmtTime(s.from)} to ${WX.fmtTime(s.to)}</span>` : ''}</h2>`;
-      if (s.note) h += `<p class="wx-note">${esc(s.note)}</p>`;
-      h += '<div class="wx-cards">' + WX.ORDER.map(k => {
-        const r = s.triggers[k], w = r.worst;
-        const where = w && w.at ? (w.km != null ? `km ${w.km}${w.place ? ' ' + esc(w.place) : ''}, ` : '') + (k === 'fire' ? '' : WX.fmtTime(w.at)) : '';
-        return `<button class="wx-card st-${r.status}" data-key="${k}" ${w && w.km != null ? `data-km="${w.km}" data-t="${w.at}"` : ''}>
-          <div class="wx-card-top"><b>${esc(r.label)}</b>${pill(r.status, r.advisory)}</div>
-          ${r.text ? `<p>${esc(r.text)}</p>` : ''}
-          ${where && r.status !== 'nodata' ? `<p class="wx-where">${where}${w.runners ? ' <span class="chip">Runners on course</span>' : ''}</p>` : ''}
-          ${r.status === 'nodata' && r.note ? `<p class="wx-where">${esc(r.note)}</p>` : ''}
-          ${r.chance && r.status !== 'nodata' ? `<p class="wx-where">Ensembles: ${r.chance.p ? 'up to ' + r.chance.p + '% ' + esc(r.chance.what || 'reach the trigger') + ` (km ${r.chance.km}, ${WX.fmtTime(r.chance.at)})` : 'none of ' + (ensN() || 'the') + ' forecasts ' + esc(r.chance.what || 'reach the trigger')}</p>` : ''}
-          ${k === 'cloud' ? liveCloudHTML() : ''}
-          <p class="wx-rule">${esc(r.rule)}${r.proposed ? ' <em>(proposed trigger)</em>' : ''}</p>
-        </button>`;
-      }).join('') + '</div>';
-    }
-    h += trendHTML();
-    h += `<details class="wx-src"><summary>Sources</summary><ul>${Object.entries(L.sources || {}).map(([k, s]) =>
+    const F = L.fire && L.fire.days && L.fire.days.length ? L.fire.days : null;
+    if (F) {
+      const day0 = F[0], worstR = W.districts.map(d => (day0.districts[d] || {}).rating).filter(Boolean)[0] || 'n/a', tfb = F.some(d => W.districts.some(k => (d.districts[k] || {}).tfb));
+      h += fold('fire', 'CFA fire danger', `${esc(WX.titleCase(worstR))} today${tfb ? ' · <b class="wx-bad">Total Fire Ban</b>' : ''}`,
+        F.map(d => `<div class="wx-row"><span>${WX.fmtDay(WX.parseLocal(d.date))}</span><span>${W.districts.map(k => { const r = d.districts[k] || {}; return `<span class="fdr fdr-${(r.rating || '').replace(/\s/g, '').toLowerCase()}">${esc(WX.titleCase(r.rating || 'n/a'))}</span>${r.tfb ? ' <b class="tfb">Total Fire Ban</b>' : ''}${W.districts.length > 1 ? ' <span class="wx-where">' + esc(k) + '</span>' : ''}`; }).join(' ')}</span></div>`).join('') +
+        `<p class="wx-note">${esc(W.districts.join(', '))} fire district. <a href="https://www.cfa.vic.gov.au/warnings-restrictions/total-fire-bans-and-ratings" target="_blank" rel="noopener">CFA fire ratings</a> · <a href="https://www.epa.vic.gov.au/for-community/airwatch" target="_blank" rel="noopener">EPA AirWatch</a></p>`, tfb, tfb ? 'bad' : '');
+    } else h += fold('fire', 'CFA fire danger', 'Not available yet', `<p class="wx-note">${L.sources && L.sources.fire && !L.sources.fire.ok ? 'The CFA feed isn\'t coming through. ' : ''}CFA ratings are published about 4 days ahead. <a href="https://www.cfa.vic.gov.au/warnings-restrictions/total-fire-bans-and-ratings" target="_blank" rel="noopener">CFA fire ratings</a></p>`, false);
+
+    h += incidentsHTML() + obsHTML() + precisHTML() + trendHTML();
+    h += fold('src', 'Sources', Object.values(L.sources || {}).every(x => x.ok) ? 'All coming through' : Object.entries(L.sources || {}).filter(([k, x]) => !x.ok && k !== 'bom_access_global').map(([k]) => esc(srcName(k).replace(/ \(.*\)$/, ''))).join(', ') + ' not updating',
+      `<ul>${Object.entries(L.sources || {}).map(([k, s]) =>
       `<li><b>${esc(srcName(k))}</b>: ${s.ok ? (s.members ? ensN() + ' forecasts: ' + Object.entries(s.members).map(([m, n]) => esc(WX.modelName(m)) + ' ' + n).join(', ') + (s.failed ? '; not working: ' + Object.keys(s.failed).map(m => esc(WX.modelName(m))).join(', ') : '')
-        : k === 'check' ? (s.hours ? s.hours + ' hours checked at ' + s.stations + ' stations' : 'waiting for readings') : s.hours ? s.hours + ' hours' : s.stations != null ? s.stations + ' stations' : 'OK') : 'not working: ' + esc(s.error)}</li>`).join('')}</ul>
-      <p class="wx-note">Consensus = the middle value of all models (median), weighted by how close each model has been to the BOM stations over the past ${W.verify ? W.verify.days : 7} days (see Models). "Getting close" also flags when any single model reaches a trigger (thunderstorms need ${T.storm.close} models). Temperatures are adjusted to the height of each point. Phone alerts go to the ntfy app when a trigger gets closer, plus a 6 am summary from ${WX.fmtDay(WX.parseLocal(W.alertsFrom))}.</p></details>`;
+        : k === 'check' ? (s.hours ? s.hours + ' hours checked at ' + s.stations + ' stations' : 'waiting for readings') : s.hours ? s.hours + ' hours' : s.stations != null ? s.stations + ' stations' : 'OK') : 'not working: ' + esc(String(s.error).slice(0, 120))}</li>`).join('')}</ul>
+      <p class="wx-note">Consensus = the middle value of all models (median), weighted by how close each model has been to the BOM stations over the past ${W.verify ? W.verify.days : 7} days (see Models). "Getting close" also flags when any single model reaches a trigger (thunderstorms need ${T.storm.close} models). Temperatures are adjusted for the height of each point.</p>`, false);
+    h += '<div class="wx-share-row"><button class="btn primary wx-share-btn" id="wxShare" type="button">Share weather update</button></div><div id="wxSharePanel"></div>';
     return h;
   }
 
   // Fires, planned burns, incidents and warnings near the course (VicEmergency).
   const INC_COL = { fire: '#c62828', burn: '#e8710a', warning: '#b87700', incident: '#666' };
   function incidentsHTML() {
-    const I = latest.incidents;
-    let h = '<h2 class="wx-h">Fires, burns and incidents</h2>';
-    if (!I || !I.items) return h + '<p class="notice warn">VicEmergency isn\'t coming through. Check <a href="https://emergency.vic.gov.au/respond/" target="_blank" rel="noopener">emergency.vic.gov.au</a>.</p>';
-    if (!I.items.length) return h + `<p class="wx-ok">Nothing on VicEmergency within ${W.incidentKm} km of the course.</p>`;
-    return h + I.items.map(it => `<a class="wx-inc" style="border-color:${INC_COL[it.kind]}" href="https://emergency.vic.gov.au/respond/" target="_blank" rel="noopener">
+    const I = latest.incidents, T = 'Fires and incidents';
+    if (!I || !I.items) return fold('inc', T, '<b class="wx-bad">VicEmergency not coming through</b>', '<p>Check <a href="https://emergency.vic.gov.au/respond/" target="_blank" rel="noopener">emergency.vic.gov.au</a>.</p>', true, 'bad');
+    if (!I.items.length) return fold('inc', T, `None within ${W.incidentKm} km`, `<p class="wx-ok">Nothing on VicEmergency within ${W.incidentKm} km of the course.</p>`, false);
+    return fold('inc', T, `<b class="wx-bad">${I.items.length} within ${W.incidentKm} km</b>`, I.items.map(it => `<a class="wx-inc" style="border-color:${INC_COL[it.kind]}" href="https://emergency.vic.gov.au/respond/" target="_blank" rel="noopener">
       <b>${esc(it.title || it.name)}</b>${it.status ? ` <span class="wx-pill">${esc(it.status)}</span>` : ''}
       <span>${esc(it.location || it.name)} · ${it.dist} km from the course (near km ${it.km})${it.size ? ' · ' + esc(it.size) : ''}</span></a>`).join('') +
-      '<p class="wx-note">From VicEmergency. Bushfires within ' + W.fireNearKm + ' km meet the fire trigger; planned burns that close make smoke getting close.</p>';
+      '<p class="wx-note">From VicEmergency. Bushfires within ' + W.fireNearKm + ' km meet the fire trigger; planned burns that close make smoke getting close.</p>', true, 'bad');
   }
-  // Live BOM observations from weather stations near the course.
+  // Live BOM observations from weather stations near the course: one line each, nearest first.
   function obsHTML() {
     const st = obs && obs.stations ? Object.values(obs.stations).sort((a, b) => a.fromCourseKm - b.fromCourseKm) : [];
-    let h = '<h2 class="wx-h">Live observations</h2>';
-    if (!st.length) return h + '<p class="wx-note">' + (latest.sources && latest.sources.obs && !latest.sources.obs.ok ? 'BOM observations aren\'t coming through.' : 'Loading…') + ' <a href="https://www.bom.gov.au/vic/observations/vicall.shtml" target="_blank" rel="noopener">BOM observations</a></p>';
+    const T = 'Live observations';
+    if (!st.length) return fold('obs', T, latest.sources && latest.sources.obs && !latest.sources.obs.ok ? 'Not coming through' : 'Loading…', '<p class="wx-note"><a href="https://www.bom.gov.au/vic/observations/vicall.shtml" target="_blank" rel="noopener">BOM observations</a></p>', false);
     const now = nowS();
-    h += '<div class="wx-scroll"><table class="wx-fire wx-obs"><thead><tr><th>Station</th><th>Time</th><th>Temp</th><th>Feels</th><th>Wind, gust</th><th>Rain</th></tr></thead><tbody>' + st.map(s => {
-      const r = s.series[s.series.length - 1], old = now - r.t > 2 * HOUR;
-      const prev = s.series.find(x => x.t >= r.t - 3 * HOUR && x.temp != null);
-      const trend = prev && r.temp != null && prev !== r ? r.temp - prev.temp : null;
-      return `<tr class="${old ? 'muted' : ''}"><td><b>${esc(s.name)}</b><br><span class="wx-where">${s.height != null ? Math.round(s.height) + ' m, ' : ''}${s.fromCourseKm} km from course</span></td>
-        <td>${WX.fmtTime(r.t, false)}${old ? '<br><span class="wx-where">old</span>' : ''}</td>
-        <td>${r.temp != null ? r.temp.toFixed(1) + '°' : 'n/a'}${trend != null && Math.abs(trend) >= 1 ? `<br><span class="wx-where">${trend > 0 ? '+' : ''}${trend.toFixed(1)} in 3 h</span>` : ''}</td>
-        <td>${r.at != null ? r.at.toFixed(1) + '°' : 'n/a'}</td><td>${r.wind != null ? Math.round(r.wind) : '-'}, ${r.gust != null ? Math.round(r.gust) : '-'} km/h ${esc(r.dir || '')}</td>
-        <td>${r.rain != null ? r.rain + ' mm' : '-'}</td></tr>`;
-    }).join('') + '</tbody></table></div><p class="wx-note">BOM weather stations within ' + W.obsRadiusKm + ' km. Rain is since 9 am. Also on the map.</p>';
+    const line = s => { const r = s.series[s.series.length - 1]; return { r, old: now - r.t > 2 * HOUR, txt: `${r.temp != null ? r.temp.toFixed(1) + '°' : 'n/a'}${r.at != null ? ', feels ' + r.at.toFixed(1) + '°' : ''}${r.gust != null ? ', gust ' + Math.round(r.gust) : ''}` }; };
+    const first = line(st[0]);
+    let body = st.map(s => {
+      const { r, old, txt } = line(s);
+      const prev = s.series.find(x => x.t >= r.t - 3 * HOUR && x.temp != null), trend = prev && r.temp != null && prev !== r ? r.temp - prev.temp : null;
+      return `<div class="wx-row${old ? ' muted' : ''}"><span><b>${esc(s.name)}</b><br><span class="wx-where">${s.height != null ? Math.round(s.height) + ' m · ' : ''}${s.fromCourseKm} km away · ${WX.fmtTime(r.t, false)}${old ? ' (old)' : ''}</span></span>
+        <span><b>${txt}</b><br><span class="wx-where">wind ${r.wind != null ? Math.round(r.wind) : '-'} km/h ${esc(r.dir || '')}${r.rain != null ? ' · rain ' + r.rain + ' mm' : ''}${trend != null && Math.abs(trend) >= 1 ? ' · ' + (trend > 0 ? '+' : '') + trend.toFixed(1) + '° in 3 h' : ''}</span></span></div>`;
+    }).join('') + '<p class="wx-note">BOM weather stations within ' + W.obsRadiusKm + ' km. Gusts in km/h, rain since 9 am. Also on the map.</p>';
     const E = latest.epa;
-    if (E && E.sites && E.sites.length) h += '<p class="wx-note"><b>EPA air monitors:</b> ' + E.sites.map(x => `${esc(x.name)} PM2.5 ${x.pm25 != null ? Math.round(x.pm25) + ' ' + esc(x.unit) : 'n/a'}${x.advice ? ' (' + esc(x.advice) + ')' : ''}, ${x.dist} km from course`).join('; ') + '.</p>';
-    return h;
+    if (E && E.sites && E.sites.length) body += '<p class="wx-note"><b>EPA air monitors:</b> ' + E.sites.map(x => `${esc(x.name)} PM2.5 ${x.pm25 != null ? Math.round(x.pm25) + ' ' + esc(x.unit) : 'n/a'}${x.advice ? ' (' + esc(x.advice) + ')' : ''}, ${x.dist} km from course`).join('; ') + '.</p>';
+    return fold('obs', T, `${esc(st[0].name)} ${first.txt}`, body, false);
   }
-  // The Bureau's own forecasts for towns near the course.
+  // The Bureau's own forecasts for towns near the course: a line a day for each town.
+  const BOM_DIST = d => 'https://www.bom.gov.au/vic/forecasts/' + d.toLowerCase().replace(/[^a-z]/g, '') + '.shtml';
   function precisHTML() {
     const P = latest.precis;
     if (!P || !P.places || !P.places.length) return '';
     const days = [...new Set(P.places.flatMap(p => p.days.map(d => d.date)))].filter(Boolean).slice(0, 5);
-    return '<h2 class="wx-h">BOM forecast</h2><div class="wx-scroll"><table class="wx-fire wx-precis"><thead><tr><th></th>' + days.map(d => `<th>${WX.fmtDay(WX.parseLocal(d))}</th>`).join('') + '</tr></thead><tbody>' +
-      P.places.map(p => `<tr><td><b>${esc(p.name)}</b></td>` + days.map(d => {
+    const p0 = P.places[0], d0 = p0.days.find(y => y.date === days[0]) || {};
+    return fold('bom', 'BOM forecast', `${esc(p0.name)} today ${d0.max != null ? d0.max + '°' : ''}${d0.precis ? ', ' + esc(d0.precis.replace(/\.$/, '').toLowerCase()) : ''}`,
+      P.places.map(p => `<h4 class="wx-sub">${esc(p.name)}</h4>` + days.map(d => {
         const x = p.days.find(y => y.date === d);
-        if (!x) return '<td></td>';
-        return `<td>${x.max != null ? '<b>' + x.max + '°</b>' : ''}${x.min != null ? ' / ' + x.min + '°' : ''}<br>${esc(x.precis || '')}${x.rain ? '<br><span class="wx-where">Rain ' + esc(x.rain) + (x.range ? ', ' + esc(x.range) : '') + '</span>' : ''}</td>`;
-      }).join('') + '</tr>').join('') + '</tbody></table></div><p class="wx-note">The Bureau of Meteorology\'s official forecasts. <a href="https://www.bom.gov.au/vic/forecasts/wimmera.shtml" target="_blank" rel="noopener">Wimmera</a> · <a href="https://www.bom.gov.au/vic/forecasts/southwest.shtml" target="_blank" rel="noopener">South West</a></p>';
+        return x ? `<div class="wx-row"><span>${WX.fmtDay(WX.parseLocal(d))}</span><span>${x.max != null ? '<b>' + x.max + '°</b>' : ''}${x.min != null ? ' / ' + x.min + '°' : ''} ${esc(x.precis || '')}${x.rain ? ' <span class="wx-where">Rain ' + esc(x.rain) + (x.range ? ', ' + esc(x.range) : '') + '</span>' : ''}</span></div>` : '';
+      }).join('')).join('') +
+      `<p class="wx-note">The Bureau of Meteorology's official forecasts. ${W.districts.map(d => `<a href="${BOM_DIST(d)}" target="_blank" rel="noopener">${esc(d)}</a>`).join(' · ')}</p>`, false);
   }
   // Live check: the BOM Mount William station (1,150 m, beside the course). Near 100% humidity means it's in cloud.
   function liveCloudHTML() {
@@ -343,13 +350,13 @@
     if (pts.length < 2) return '';
     const series = [['heat', 'Hottest °C', '#c62828'], ['wind', 'Gust on ridges km/h', '#7b1fa2'], ['rain', 'Rain 24 h mm', '#1666c9'], ['cold', 'Coldest feels like °C', '#2a4d9b']];
     const t0 = pts[0].t, t1 = pts[pts.length - 1].t;
-    return '<h2 class="wx-h">How the race forecast has moved</h2><div class="wx-trend">' + series.map(([k, lab, col]) => {
+    return fold('trend', 'How the race forecast has moved', 'Since ' + WX.fmtDay(t0), '<div class="wx-trend">' + series.map(([k, lab, col]) => {
       const v = pts.filter(p => p.race[k] != null);
       if (v.length < 2) return '';
       const lo = Math.min(...v.map(p => p.race[k])), hi = Math.max(...v.map(p => p.race[k])), span = hi - lo || 1;
       const d = v.map((p, i) => `${i ? 'L' : 'M'}${(4 + 192 * (p.t - t0) / (t1 - t0 || 1)).toFixed(1)},${(36 - 30 * (p.race[k] - lo) / span).toFixed(1)}`).join('');
       return `<div><span>${lab}: <b>${v[v.length - 1].race[k].toFixed(k === 'wind' ? 0 : 1)}</b></span><svg viewBox="0 0 200 40" preserveAspectRatio="none"><path d="${d}" fill="none" stroke="${col}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg></div>`;
-    }).join('') + `</div><p class="wx-note">Race weekend peaks from each run since ${WX.fmtDay(t0)}.</p>`;
+    }).join('') + `</div><p class="wx-note">Race weekend peaks from each run since ${WX.fmtDay(t0)}.</p>`, false);
   }
   // Daily weather update: written from the latest data, editable, then sent by WhatsApp or copied.
   async function openShare() {
@@ -377,11 +384,6 @@
   }
   function bindTriggers() {
     $('wxShare').addEventListener('click', openShare);
-    if ($('wxRisk')) $('wxRisk').addEventListener('click', () => { const b = document.querySelector('.tab-btn[data-tab="risk"]'); if (b) b.click(); window.RiskTab.start('morning'); });
-    $('wxView').querySelectorAll('.wx-scope').forEach(b => b.addEventListener('click', () => {
-      trigScope = b.dataset.scope; renderView();
-      const el = $('wxs-' + trigScope); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }));
     $('wxView').querySelectorAll('.wx-card[data-km]').forEach(b => b.addEventListener('click', () => {
       sel = { km: +b.dataset.km, t: +b.dataset.t };
       dsKey = null; ds = null;
@@ -404,7 +406,7 @@
     if (!sel || hourIdx(g, sel.t) < 0 || hourIdx(g, sel.t) >= g.n) {
       // Start at the race start (or now, for the next few days).
       const t = tlRange === 'race' || !ds.forecast ? paceStart() + ds.shift : nowS();
-      sel = { km: sel ? sel.km : 86.4, t: g.t0 + Math.max(0, Math.min(g.n - 1, hourIdx(g, t))) * HOUR };
+      sel = { km: sel ? sel.km : Math.round(G.route[G.route.length - 1][2] / 2), t: g.t0 + Math.max(0, Math.min(g.n - 1, hourIdx(g, t))) * HOUR };
     }
     $('wxView').innerHTML = dsPicker() + `
       <div class="wx-ctl">
@@ -583,7 +585,7 @@
       <div class="wx-runners"><div id="wxRunfast" class="wx-runner"></div><div id="wxRunslow" class="wx-runner"></div></div>
       <h2 class="wx-h">The whole race</h2>
       ${['fast', 'slow'].map(k => tripHTML(trip[k])).join('')}
-      <p class="wx-note">Fastest = first runner's expected times, slowest = the cut-offs (GPT100 Miler, Course Details sheet). Weather is the model consensus at each runner's position every 30 minutes.</p>`;
+      <p class="wx-note">Fastest = first runner's expected times, slowest = the cut-offs (${esc(PACE.label)}). Weather is the model consensus at each runner's position every 30 minutes.</p>`;
     bindDs();
     $('wxPlay').addEventListener('click', () => playTimer ? stopPlay() : startPlay());
     $('wxSpeed').addEventListener('change', e => { simSpeed = +e.target.value; });
@@ -680,7 +682,7 @@
   const LINES = { t: [[T.heat.close, 'close'], [T.heat.met, 'met']], at: [[T.cold.close, 'close'], [T.cold.met, 'met']], g: [[T.wind.close, 'close'], [T.wind.met, 'met']], cape: [[T.storm.capeClose, 'close']] };
   async function renderModels() {
     const g = await loadGrid();
-    if (mdPoint == null) mdPoint = nearestPoint(g, sel ? sel.km : 86.4);
+    if (mdPoint == null) mdPoint = nearestPoint(g, sel ? sel.km : Math.round(G.route[G.route.length - 1][2] / 2));
     const V = $('wxView');
     V.innerHTML = `<div class="wx-ctl">
       <label>Point <select id="wxPt">${g.points.map((p, i) => `<option value="${i}"${i === mdPoint ? ' selected' : ''}>km ${p.km} ${esc(p.name)} (${p.ele} m${p.ridge ? ', ridge' : ''})</option>`).join('')}</select></label>

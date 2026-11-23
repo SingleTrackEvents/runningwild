@@ -55,7 +55,7 @@ window.GPT100_CONFIG = {
       smoke: { met: 150, close: 100, proposed: true },
       cloud: { hours: 3, agree: 50, rh: 93, minEle: 1600, advisory: true,
         zones: [{ name: 'Mt Stirling', fromKm: 7, toKm: 18 }, { name: 'Mt Buller summit', fromKm: 40, toKm: 42 }] },
-      fire: {}
+      fire: { districts: ['North East'] }  // named in the rule text; the ratings come from weather.districts
     }
   },
   // Live runner positions: none for the test (no trackers or chip timing feed at Buller). The field phones that share

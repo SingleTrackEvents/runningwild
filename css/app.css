@@ -911,3 +911,51 @@ html.demo-on body.field .demo-list { bottom: calc(112px + env(safe-area-inset-bo
 .rc-ack { background: var(--red-fill) !important; border-color: var(--red-fill) !important; }
 .rc-phone { display: inline-block; transform: translate(-50%, 0); white-space: nowrap; padding: 1px 7px; border-radius: 4px; background: #1666c9; color: #fff; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.5); font: 700 11px/14px var(--body); }
 .rc-phone.old { background: #8fa8c9; }
+
+/* ---------- Weather, condensed for phones (Running Wild) ----------
+   The triggers as one row each (both scopes side by side, open for the detail), and every other section folded
+   to a single line that says what matters. Sections with something to act on open themselves. */
+.wx-scope { cursor: default; }
+.wx-scope span { display: block; font-size: 11.5px; color: var(--muted); }
+.wx-tlist { margin: 12px 0 6px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); overflow: hidden; }
+.wx-thead, .wx-trow > summary { display: grid; grid-template-columns: 1fr 92px 92px; align-items: center; gap: 6px; padding: 8px 10px; }
+.wx-thead { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); padding-top: 6px; padding-bottom: 6px; }
+.wx-thead span + span, .wx-trow > summary .wx-pill { justify-self: center; }
+.wx-trow { border-bottom: 1px solid var(--line); border-left: 5px solid transparent; }
+.wx-trow:last-of-type { border-bottom: 0; }
+.wx-trow.st-met { border-left-color: #c62828; }
+.wx-trow.st-close { border-left-color: #e0a000; }
+.wx-trow > summary { list-style: none; cursor: pointer; font-size: 14.5px; }
+.wx-trow > summary::-webkit-details-marker { display: none; }
+.wx-trow > summary b::before { content: '›'; display: inline-block; width: 12px; color: var(--muted); transition: transform .15s; }
+.wx-trow[open] > summary b::before { transform: rotate(90deg); }
+.wx-trow > summary .wx-pill { font-size: 11px; padding: 2px 7px; white-space: nowrap; }
+.wx-trow .wx-card { display: block; width: calc(100% - 20px); margin: 0 10px 8px; padding: 8px 10px; }
+.wx-trow .wx-rule { margin: 0 10px 10px; }
+.wx-tlist > .wx-note { margin: 0; padding: 8px 10px; border-top: 1px solid var(--line); }
+.wx-fold { background: var(--paper); border: 1px solid var(--line); border-left: 5px solid var(--line); border-radius: 10px; margin-bottom: 8px; }
+.wx-fold-bad { border-left-color: #c62828; }
+.wx-fold > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; padding: 10px 12px; cursor: pointer; list-style: none; font-size: 14.5px; }
+.wx-fold > summary::-webkit-details-marker { display: none; }
+.wx-fold > summary > b::before { content: '›'; display: inline-block; width: 12px; color: var(--muted); transition: transform .15s; }
+.wx-fold[open] > summary > b::before { transform: rotate(90deg); }
+.wx-fold > summary > span { color: var(--muted); font-size: 13.5px; }
+.wx-fold-body { padding: 0 12px 10px; }
+.wx-fold-body > ul { padding-left: 18px; margin: 4px 0; font-size: 13px; }
+.wx-bad { color: #c62828; }
+.wx-row { display: grid; grid-template-columns: minmax(84px, 38%) 1fr; gap: 8px; padding: 7px 0; border-top: 1px solid var(--line); font-size: 13.5px; }
+.wx-row:first-child { border-top: 0; }
+.wx-sub { margin: 10px 0 2px; font-size: 13px; text-transform: uppercase; letter-spacing: .05em; }
+.wx-share-row { margin: 12px 0 4px; }
+@media (max-width: 899px) {
+  .wx-map { height: 30vh; min-height: 190px; max-height: 260px; }
+  .wx-head h1 { font-size: 26px; margin: 0; }
+  .wx-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+  .wx-upd { font-size: 12px; margin: 0; }
+  .wx-views button { font-size: 13px; padding: 8px 4px; }
+  body.on-wx .foot { display: none; }
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .wx-bad { color: #ff8a80; } }
+.wx-overall { grid-template-columns: 1fr 1fr !important; }
+.wx-overall .wx-scope { padding: 6px 10px; }
+.wx-overall .wx-scope b { font-size: 20px; }

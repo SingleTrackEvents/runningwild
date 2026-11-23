@@ -160,7 +160,7 @@
     rain: 'Heavy rain', cold: 'Cold on ridges', smoke: 'Smoke', cloud: 'Cloud on high ground'
   };
   const RULES = {
-    fire: 'Total Fire Ban, or Extreme or Catastrophic rating, in the Wimmera or South West district',
+    fire: T => 'Total Fire Ban, or Extreme or Catastrophic rating, in the ' + ((T && T.districts) || ['course\'s']).join(' or ') + ' fire district',
     heat: T => 'Air temperature ' + T.met + '°C or WBGT ' + T.wbgtMet + ' (close from ' + T.close + '°C or WBGT ' + T.wbgtClose + ')',
     wind: T => 'Gusts over ' + T.met + ' km/h on ridges, or a BOM Severe Weather Warning (close from ' + T.close + ' km/h)',
     storm: T => 'Thunderstorm in ' + T.met + ' or more models, or a BOM Severe Thunderstorm Warning (close: ' + T.close + ' models, or storm energy (CAPE) ' + T.capeClose + ' J/kg)',
