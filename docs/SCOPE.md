@@ -1,6 +1,6 @@
 # Running Wild Safety App: Scope
 
-Draft v0.2, 23 November 2026. v0.2 records the decisions on the scope questions (section 9) and adds planning for race rego and volunteer rego (section 10). Prepared for Chad Freak, Operations Manager.
+Draft v0.3, 24 November 2026. v0.3 adds decisions 9 to 11 (Medical and Risk tabs out, Weather condensed, the logo). v0.2 records the decisions on the scope questions (section 9) and adds planning for race rego and volunteer rego (section 10). Prepared for Chad Freak, Operations Manager.
 
 This scopes a safety app for the SingleTrack Running Wild series, built on what the GPT100 Safety app already does. It covers what carries over, what has to change so one app runs every Running Wild event, what's new, and a build plan against the season dates.
 
@@ -14,7 +14,7 @@ One app for the whole Running Wild season that answers the same question the GPT
 
 It keeps the GPT100 app's three faces:
 
-- **Staff app** for whoever takes the call: Find, Weather, Medical, Control and Risk.
+- **Staff app** for whoever takes the call: Find, Weather and Control (no Medical or Risk tab: decided 24 November).
 - **Field app** for Safety Officers, sweeps, marshals, medics and Alpine Search and Rescue on the course.
 - **Runner app** for runners and their crews.
 
@@ -39,7 +39,7 @@ The difference is that every Running Wild event lives inside it. You open the ap
 
 The GPT100 app is built for one event. Its settings, courses and data are one set of files, and about 300 places in the code name the GPT100 directly. For Running Wild:
 
-- **Event packs.** Each event is a folder of its own data: courses, aid stations, access points, response bases, Safety Officer and marshal posts, track grades, helicopter sites, what3words, medical plan, risk register, weather settings, schedule, gear list and contacts. The app code knows nothing about any one event.
+- **Event packs.** Each event is a folder of its own data: courses, aid stations, access points, response bases, Safety Officer and marshal posts, track grades, helicopter sites, what3words, weather settings, schedule, gear list and contacts. The app code knows nothing about any one event.
 - **Event picker.** The app opens on the event that's on now or next. Past events stay readable for the debrief. Staff can switch to any event for planning.
 - **Several courses per event.** Most Running Wild events run several distances on different lines (not one long course cut into races, as at the GPT100). Every course needs its own km, sections and cut-offs, and Find has to place a casualty on the right one.
 - **Offline maps per event.** The GPT100 app ships about 30 MB of topo map tiles in the site. Six events' tiles can't all go on every phone, so each event's map is saved on the phone only when someone picks that event.
@@ -51,7 +51,7 @@ The GPT100 has a Race Control room, a response team at three bases and dozens of
 
 - **Control on a phone.** The board has to work for one person on a phone who is also doing three other jobs. Help requests and incidents need to buzz that phone (push alerts), not wait for someone to look at a screen.
 - **Response bases are people, not places.** At the GPT100 a team leaves Halls Gap, Jimmy Creek or Dunkeld. At Running Wild it's usually the 4WD at the village, a roaming staff member or the nearest Safety Officer. Find should rank whoever is on duty, wherever they are now (from the field app's live position), not only fixed bases.
-- **Less to set up.** Fewer tabs on by default. Each event turns on only what it needs (for example no Risk tab at Kilcunda, the full Risk tab at Alpine Challenge).
+- **Less to set up.** Three tabs: Find, Weather and Control. No Medical or Risk tab; the staff password goes on the Control tab.
 
 ### 3.3 Tracking without trackers
 
@@ -108,8 +108,8 @@ Most of it. The GPT100 app is about 10,000 lines of tested code and a lot of it 
 | Night factor, climb penalty, slow sections, 2 and 4 hour escalation warnings | Tracking (add phones as a feed) | Stage race km conversion |
 | what3words throughout, with stored words offline | Weather triggers (per event, plus tides) | The 2026 fitted splits (no Running Wild timing history yet) |
 | Field app: Where am I?, nearest way out, Send my location, Urgent | Offline map tiles (saved per event) | Five-language Help tab (unless needed) |
-| Control board: incidents, units, radio log, export, notices, help requests | Medical plan (much smaller per event) | Race archive for predictions (later) |
-| Risk tab: dynamic risk assessment and sign-off | Branding (one Running Wild look) | |
+| Control board: incidents, units, radio log, export, notices, help requests | Weather tab (condensed for phones) | Race archive for predictions (later) |
+| | Branding (one Running Wild look) | Medical and Risk tabs |
 | Weather: models, ensembles, BOM warnings, observations, CFA, EPA, VicEmergency | Event setup tools (from command line scripts to a repeatable process) | |
 | Runner app: map, aid stations and cut-offs, Help, Schedule, Gear, off-course alert | | |
 | Offline-first, build numbers, crash tests | | |
@@ -150,7 +150,7 @@ The App Store and Google Play app (for runners' background location) waits until
 | 0. Tracking test | Mt Buller, 6 Dec 2026 | The GPT100 field app pointed at the Buller course, to test Safety Officer and phone tracking: battery use, how often fixes come through, Starlink, and how it looks on the Control map. No new build |
 | 1. Core | Kilcunda, 31 Jan 2027 | Event packs and picker, several courses per event, staff Find, field app, runner app (map, aid stations, Help, Schedule, Gear), Control on a phone with push alerts, weather with per-event triggers, setup tool v1. Kilcunda and Buller packs built |
 | 2. No signal | Snow Gum Run, 28 Feb 2027, and Razorback, 13 Mar 2027 | Checkpoint and sweep logging offline, who's still out, queued positions, trackers for Razorback merged with phones |
-| 3. The big ones | Alpine Challenge, 3 Apr 2027, and Wilsons Prom, 1 May 2027 | Full Risk tab, medical plan per event, ASR and partner access, tides for the Prom, road crossings, dedicated tracker feed for Alpine |
+| 3. The big ones | Alpine Challenge, 3 Apr 2027, and Wilsons Prom, 1 May 2027 | ASR and partner access, tides for the Prom, road crossings, dedicated tracker feed for Alpine |
 | 4. Review | After the Prom | Season debrief. Decide on moving GPT100 2027 and Buffalo onto this app. Hand event setup to the team with the spreadsheet template. Plan the rego and volunteer rego link (section 10) |
 
 Each phase finishes with a rehearsal using the in-app demo (made-up runners played through the event) and the crash tests, at least a week before the event.
@@ -169,6 +169,9 @@ Made on 23 November 2026.
 | 6 | Logins? | Keep the GPT100's shared passwords and team codes for season 1 |
 | 7 | Which events get the runner app? | Every event |
 | 8 | Where does the app live? | GitHub Pages for now, next to the GPT100 |
+| 9 | Medical and Risk tabs? | Not needed for Running Wild (24 November). The staff password unlocks Control from the Control tab |
+| 10 | Weather? | Keep every part (triggers, warnings, CFA, timeline, simulator, models, observations, BOM forecast, share), condensed to read easily on a phone (24 November) |
+| 11 | Branding? | The SingleTrack Running Wild logo in the app, on the home screen icon and the Android app (24 November) |
 
 Still open:
 
