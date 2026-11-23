@@ -307,7 +307,7 @@
     // Left alone while someone is typing in it or has a menu open.
     const a = document.activeElement;
     if (a && el.contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
-    const key = JSON.stringify([live.help_on, live.field_code, live.notices, live.field.map(f => [f.id, f.name, f.km, Math.round((live.now - f.t) / 60000)]), live.faults, live.alerts, faults && faults.map(f => [f.sig, f.n]), noticeDraft]);
+    const key = JSON.stringify([live.help_on, live.field_code, live.notices, live.field.map(f => [f.id, f.name, f.km, f.sos, Math.round((live.now - f.t) / 60000)]), live.garmin, live.faults, live.alerts, faults && faults.map(f => [f.sig, f.n]), noticeDraft]);
     if (key === liveKey) return;
     liveKey = key;
     const N = live.notices || [], F = live.field || [], fa = live.faults || { n: 0 };
@@ -328,8 +328,9 @@
       <h4>Field phones on the map</h4>
       <form id="rcCode" class="rc-logform"><input id="rcCodeText" type="text" maxlength="20" autocomplete="off" value="${esc(live.field_code || '')}" placeholder="Team code, e.g. PEAKS26" aria-label="Team code"><button class="btn small" type="submit">${live.field_code ? 'Change' : 'Set'}</button></form>
       <p class="muted rc-small">${live.field_code ? 'Give this code out at the briefing. A field phone with it, and Share my position on, shows on the map as a blue tag.' : 'Set a team code to let Safety Officers and sweeps share their position from the field app. Clear it to stop.'}</p>
-      ${F.length ? F.map(f => `<div class="row"><span><b>${esc(f.name)}</b><span class="sub">${f.km != null ? 'km ' + (+f.km).toFixed(1) + (f.offM > 150 ? ', ' + Math.round(f.offM / 10) * 10 + ' m off the course' : '') : 'off the course'} · ${ageOf(f.t)}${f.acc > 100 ? ' · GPS ±' + Math.round(f.acc) + ' m' : ''}${f.bat != null ? ' · battery ' + Math.round(f.bat * 100) + '%' : ''}${f.src === 'apk' ? ' · Android app' : ''}</span></span><button class="btn small" type="button" data-phone="${esc(f.id)}">Show</button></div>`).join('') : ''}
-      <div class="rc-switch"><span>Every position the field phones have sent (the tracking test), as a spreadsheet.</span><button class="btn small" type="button" id="rcTracks">Download tracks</button></div>
+      ${F.length ? F.map(f => `<div class="row${f.sos ? ' rc-sos' : ''}"><span><b>${f.sos ? 'SOS: ' : ''}${esc(f.name)}</b><span class="sub">${f.src === 'garmin' ? (fieldKm(f) != null ? 'km ' + fieldKm(f).toFixed(1) : 'off the course') : f.km != null ? 'km ' + (+f.km).toFixed(1) + (f.offM > 150 ? ', ' + Math.round(f.offM / 10) * 10 + ' m off the course' : '') : 'off the course'} · ${ageOf(f.t)}${f.acc > 100 ? ' · GPS ±' + Math.round(f.acc) + ' m' : ''}${f.bat != null ? ' · battery ' + Math.round(f.bat * 100) + '%' : ''}${f.src === 'apk' ? ' · Android app' : f.src === 'garmin' ? ' · inReach' : ''}</span></span><button class="btn small" type="button" data-phone="${esc(f.id)}">Show</button></div>`).join('') : ''}
+      ${garminHTML()}
+      <div class="rc-switch"><span>Every position the field phones and inReach units have sent (the tracking test), as a spreadsheet.</span><button class="btn small" type="button" id="rcTracks">Download tracks</button></div>
       <h4>App faults</h4>
       ${fa.n ? `<div class="rc-switch"><span><b>${fa.n} kind${fa.n === 1 ? '' : 's'} of fault</b> reported by phones (${fa.hits} in all), the last ${ageOf(fa.last)}.</span><button class="btn small" type="button" id="rcFaults">${faults ? 'Hide' : 'Show'}</button></div>` : '<p class="muted rc-small">No faults reported by the phones.</p>'}
       ${faults && fa.n ? faults.map(f => `<div class="rc-fault"><b>${esc(f.app)} app, build ${esc(f.build)}: ${esc(f.msg)}</b><span>${esc(f.src)}:${f.line} · ${f.n} time${f.n === 1 ? '' : 's'}, first ${dhm(f.first)}, last ${dhm(f.last)}</span><span>${esc(f.ua || '')}</span></div>`).join('') + '<button class="btn small" type="button" id="rcFaultsClear">Clear the list</button>' : ''}`;
@@ -510,14 +511,17 @@
       L.marker(ll, { icon: L.divIcon({ className: '', html: `<div class="rc-pin" style="background:${sev[1]};color:${sev[2] || '#fff'}">${i.num || '…'}</div>`, iconSize: [26, 26], iconAnchor: [13, 13] }) })
         .bindTooltip(`#${i.num || '…'} ${esc(i.desc || '')}`).on('click', () => { const el = document.querySelector(`.rc-card[data-id="${i.id}"]`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }).addTo(layer);
     });
-    // Field phones sharing their position (blue tags; pale once the position is over 15 minutes old).
+    // Field phones sharing their position (blue tags; pale once the position is over 15 minutes old), and the sweeps'
+    // Garmin inReach units (purple, by satellite; red and flashing in SOS).
     ((live && live.field) || []).forEach(f => {
-      const old = (live.now || now()) - f.t > 15 * 60000;
-      L.marker([f.lat, f.lon], { zIndexOffset: 300, icon: L.divIcon({ className: '', html: `<div class="rc-phone${old ? ' old' : ''}">${esc(f.name)}</div>`, iconSize: [0, 0], iconAnchor: [0, 9] }) })
-        .bindPopup(`<b>${esc(f.name)}</b> · field phone<br>${f.km != null ? 'km ' + (+f.km).toFixed(1) + '<br>' : ''}Position ${ageOf(f.t)}${f.acc ? ', GPS ±' + Math.round(f.acc) + ' m' : ''}`).addTo(layer);
+      const old = (live.now || now()) - f.t > 15 * 60000, gk = f.km != null ? f.km : fieldKm(f);
+      L.marker([f.lat, f.lon], { zIndexOffset: f.sos ? 900 : 300, icon: L.divIcon({ className: '', html: `<div class="rc-phone${old ? ' old' : ''}${f.src === 'garmin' ? ' garmin' : ''}${f.sos ? ' sos' : ''}">${f.sos ? 'SOS ' : ''}${esc(f.name)}</div>`, iconSize: [0, 0], iconAnchor: [0, 9] }) })
+        .bindPopup(`<b>${esc(f.name)}</b> · ${f.src === 'garmin' ? 'Garmin inReach' : 'field phone'}${f.sos ? '<br><b style="color:#c62828">In SOS (emergency declared on the device)</b>' : ''}<br>${gk != null ? 'km ' + (+gk).toFixed(1) + '<br>' : ''}Position ${ageOf(f.t)}${f.acc ? ', GPS ±' + Math.round(f.acc) + ' m' : ''}${f.ev ? '<br>' + esc(f.ev) : ''}`).addTo(layer);
     });
   }
   function focusMarker() { }
+  // Course km of a position with none sent (the Garmin units), when it's within 500 m of the course.
+  function fieldKm(f) { try { const sn = G.snap(f.lat, f.lon); return sn && sn.offM <= 500 ? G.route[sn.ic][2] : null; } catch (e) { return null; } }
   // Timers and the clock, every second.
   function tick() {
     if (!$('rcClock')) return;
@@ -640,6 +644,16 @@
   }
 
   // ---------- export ----------
+  // The sweeps' Garmin inReach units: whether the Worker is reading their MapShare, and the MapShare page itself.
+  function garminHTML() {
+    const g = (live && live.garmin) || {}, M = C.tracking && C.tracking.mapshare;
+    const state = !g.on ? 'Not set up on the Worker yet (the GARMIN_PASSWORD secret, tools/RUNNING_WILD_WORKER.md).'
+      : g.err ? 'The Worker can\'t read MapShare: ' + esc(g.err) + '.'
+      : !g.last ? 'The Worker is reading MapShare; no points in the last 24 hours.'
+      : now() - g.last < 6 * 3600e3 ? 'On the map in purple. Last inReach point ' + ageOf(g.last) + '.'
+      : 'Last inReach point ' + new Intl.DateTimeFormat('en-AU', { timeZone: 'Australia/Melbourne', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(g.last) + ': older than 6 hours, so not on the map. They show once tracking is on.';
+    return `<h4>Sweeps' Garmin inReach</h4><div class="rc-switch"><span class="rc-small">${state}</span>${M ? `<a class="btn small" href="${esc(M)}" target="_blank" rel="noopener">MapShare</a>` : ''}</div>`;
+  }
   // The tracking test: every fix the field phones sent in the last 3 days, from the Worker, as a CSV file.
   async function downloadTracks() {
     const btn = $('rcTracks'); if (btn) { btn.disabled = true; btn.textContent = 'Downloading...'; }

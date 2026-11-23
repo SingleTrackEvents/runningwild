@@ -31,7 +31,7 @@ Crew only, each with a call sign:
 | Sweep 45, Sweep 36, Sweep 22, Sweep 5 | Sweeps | Behind each race |
 | Julie, Chad, Ryan, Emily | Staff | Village and on the move |
 
-The sweeps matter most: they cover the whole course, so their tracks show where signal comes and goes.
+The sweeps matter most: they cover the whole course, so their tracks show where signal comes and goes. They also carry the Garmin inReach units (STE Sweep 1 to 4), which report by satellite onto the Control map in purple. A sweep with both gives a straight comparison of phone against satellite in the tracks spreadsheet.
 
 ## 3. Before the event
 

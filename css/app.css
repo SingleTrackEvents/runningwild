@@ -959,3 +959,9 @@ html.demo-on body.field .demo-list { bottom: calc(112px + env(safe-area-inset-bo
 .wx-overall { grid-template-columns: 1fr 1fr !important; }
 .wx-overall .wx-scope { padding: 6px 10px; }
 .wx-overall .wx-scope b { font-size: 20px; }
+/* The sweeps' Garmin inReach units on the Control map: purple; red and flashing in SOS. */
+.rc-phone.garmin { background: #6a1b9a; }
+.rc-phone.garmin.old { background: #a98bbd; }
+.rc-phone.sos { background: #c62828; animation: rc-sos 1s steps(2, start) infinite; }
+@keyframes rc-sos { to { background: #ff5252; } }
+.rc-sos b { color: #c62828; }

@@ -6,7 +6,7 @@
 // few seconds (weak signal). Leaflet and the fonts are served with the app (lib/) and saved with each build, so nothing
 // the pages need comes from another site. Map tiles are cached as they're used; the topo map can also be saved whole
 // (js/basemap.js).
-const BUILD = '4';
+const BUILD = '5';
 const VERSION = 'rw-v' + BUILD;
 const NEXT = 'rw-next-v'; // + a newer build: files for its pages, fetched before that build's worker is in
 // Pages, manifests and icons, saved by their own address.

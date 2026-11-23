@@ -35,13 +35,14 @@ const DB = { prepare: q => stmt(q, []), batch: async list => { sql.exec('BEGIN')
 const realFetch = globalThis.fetch;
 globalThis.fetch = (u, init) => {
   const host = new URL(typeof u === 'string' ? u : u.url).hostname;
-  if (!/^(127\.0\.0\.1|localhost)$/.test(host)) return Promise.resolve(new Response(JSON.stringify({ blocked: host, workflow_runs: [] }), { status: 503 }));
+  // (ALLOW_HOSTS=share.garmin.com,... lets named hosts through, to try a real feed.)
+  if (!/^(127\.0\.0\.1|localhost)$/.test(host) && !(process.env.ALLOW_HOSTS || '').split(',').includes(host)) return Promise.resolve(new Response(JSON.stringify({ blocked: host, workflow_runs: [] }), { status: 503 }));
   const o = Object.assign({}, init); delete o.cf;
   return realFetch(u, o);
 };
 const FEEDS = process.env.FEEDS || 'http://127.0.0.1:8766/';
 const env = {
-  DB, GITHUB_TOKEN: process.env.GITHUB_TOKEN === undefined ? 'local' : process.env.GITHUB_TOKEN, RC_PASSWORD: process.env.RC_PASSWORD || 'local-test',
+  DB, GITHUB_TOKEN: process.env.GITHUB_TOKEN === undefined ? 'local' : process.env.GITHUB_TOKEN, RC_PASSWORD: process.env.RC_PASSWORD || 'local-test', GARMIN_PASSWORD: process.env.GARMIN_PASSWORD || '', GARMIN_DAYS: process.env.GARMIN_DAYS || '1',
   TIMING_URL: process.env.TIMING_URL || FEEDS + 'live/timing.json', GPS_HOST: process.env.GPS_HOST || FEEDS,
   ALLOWED_ORIGIN: process.env.ALLOWED_ORIGIN || 'http://127.0.0.1:8765,http://localhost:8765',
   ARCHIVE_FROM: '2020-01-01T00:00:00+11:00', ARCHIVE_TO: '2100-01-01T00:00:00+11:00', ARCHIVE_GPS: '', SITE_CONFIG: 'http://127.0.0.1:1/none',

@@ -61,7 +61,9 @@ window.GPT100_CONFIG = {
   // Live runner positions: none for the test (no trackers or chip timing feed at Buller). The field phones that share
   // their position with the team code show on the Control board's map (js/live.js, tools/LIVE.md).
   planPlaces: {},
-  tracking: { url: '', results: '', label: 'Live tracking', gps: [], chip: '', credit: '' },
+  // mapshare: the sweeps' Garmin inReach MapShare page (the MapShare password is asked there). The Worker reads their
+  // positions onto the Control map with the GARMIN_PASSWORD secret (tools/RUNNING_WILD_WORKER.md).
+  tracking: { url: '', results: '', label: 'Live tracking', gps: [], chip: '', credit: '', mapshare: 'https://share.garmin.com/Singletracksweeps' },
   // what3words API key. It's locked in the what3words dashboard to singletrackevents.github.io,
   // so it only works from the live site. Leave blank to be asked once on each device instead.
   what3wordsKey: 'LBTPEWCQ'

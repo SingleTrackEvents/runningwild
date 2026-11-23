@@ -54,6 +54,20 @@ If something is wrong:
 - **"Couldn't check the password: no signal, or the Worker isn't set up yet"**: the Worker address in `data/config.js` doesn't match, or step 1 didn't deploy.
 - **"That password didn't work"**: `RC_PASSWORD` doesn't match what you typed.
 
+## The sweeps' Garmin inReach units
+
+The sweeps carry Garmin inReach units that report by satellite to the MapShare page `share.garmin.com/Singletracksweeps`. The Worker reads their positions from MapShare (at most once a minute, while a Control board is open) and puts them on the Control map in purple, next to the field phones, and in **Download tracks**. An inReach in SOS shows as a flashing red tag.
+
+The MapShare password stays out of the app and out of GitHub (the repository is public). It goes on the Worker as a secret:
+
+1. In Cloudflare, go to **Workers & Pages**, then **runningwild-live**, then **Settings**, then **Variables and Secrets**, then **Add**.
+2. **Type:** Secret. **Variable name:** `GARMIN_PASSWORD`. **Value:** the MapShare password.
+3. Click **Deploy** (or **Save**).
+
+Check it: unlock **Control**. Under **Sweeps' Garmin inReach** in the Phones panel it says when the last inReach point came in. "Not set up on the Worker yet" means the secret is missing; "can't read MapShare" means the password is wrong or MapShare is down. The **MapShare** button opens Garmin's own map page.
+
+Points older than 6 hours drop off the map, so the units show once their tracking is on. If the MapShare name changes, set `GARMIN_SHARE` as a Worker variable (plain text, not secret).
+
 ## Not needed for the test
 
 The GPT100 Worker also refreshes the weather (`GITHUB_TOKEN`), relays the timing and GPS feeds (`TIMING_URL`) and sends checkpoint alerts (a one-minute timer). Buller has no weather watch, trackers or chip feed in the app, so none of those are set up. Everything else still works without them.
@@ -63,5 +77,5 @@ The GPT100 Worker also refreshes the weather (`GITHUB_TOKEN`), relays the timing
 Download the tracks first. Then, to clear the database before the next event, open `runningwild-race-control` in Cloudflare, go to **Console**, and run:
 
 ```
-DELETE FROM field_track; DELETE FROM field_pos; DELETE FROM notices; DELETE FROM faults; DELETE FROM incidents; DELETE FROM units; DELETE FROM log; DELETE FROM rate;
+DELETE FROM field_track; DELETE FROM field_pos; DELETE FROM settings WHERE k LIKE 'garmin_%'; DELETE FROM notices; DELETE FROM faults; DELETE FROM incidents; DELETE FROM units; DELETE FROM log; DELETE FROM rate;
 ```

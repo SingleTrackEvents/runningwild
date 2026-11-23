@@ -68,7 +68,10 @@ const DEFAULTS = {
   ARCHIVE_GPS: '',
   ARCHIVE_FROM: '2026-12-06T05:00:00+11:00',
   ARCHIVE_TO: '2026-12-06T20:00:00+11:00',
-  SITE_CONFIG: 'https://singletrackevents.github.io/runningwild/data/config.js'
+  SITE_CONFIG: 'https://singletrackevents.github.io/runningwild/data/config.js',
+  // The sweeps' Garmin inReach units (MapShare). The password is the GARMIN_PASSWORD secret, never in the code.
+  GARMIN_SHARE: 'Singletracksweeps',
+  GARMIN_DAYS: '1'  // how far back the first read goes (after that, only points newer than the last one seen)
 };
 const GPS_HOST = 'https://tulospalvelu.fi/gps/';  // the GPS tracking provider (GPS-seuranta)
 const gpsHost = env => (env && env.GPS_HOST) || GPS_HOST;  // (a rehearsal on a computer can point this at its own files)
@@ -182,13 +185,15 @@ async function raceControl(req, env, url, c, ctx) {
   if (url.pathname === '/rc/state' && req.method === 'GET') {
     const since = Math.max(0, +url.searchParams.get('since') || 0);
     await ensureLive(db);
+    // The sweeps' inReach units, at most once a minute (never holds the board up for long).
+    await Promise.race([garminPoll(env, db, now).catch(e => console.log('garmin: ' + e.message)), new Promise(r => setTimeout(r, 8000))]);
     const ops = [
       db.prepare('SELECT id, num, data, updated, version FROM incidents WHERE updated > ?1 ORDER BY updated').bind(since),
       db.prepare('SELECT id, data, updated FROM units WHERE updated > ?1').bind(since),
       db.prepare('SELECT id, t, incident, kind, text, who FROM log WHERE updated > ?1 ORDER BY id DESC LIMIT 500').bind(since),
       // The line to the phones, whole each time (it's small): the switches, the notices showing, the field phones
       // heard from in the last 6 hours, and how many kinds of fault the phones have reported.
-      db.prepare("SELECT k, v FROM settings WHERE k IN ('help_on', 'field_code')"),
+      db.prepare("SELECT k, v FROM settings WHERE k IN ('help_on', 'field_code', 'garmin_last', 'garmin_err')"),
       db.prepare('SELECT id, data, created, until FROM notices WHERE cleared IS NULL AND (until IS NULL OR until > ?1) ORDER BY created DESC LIMIT 20').bind(now),
       db.prepare('SELECT id, name, data, t FROM field_pos WHERE t > ?1 ORDER BY name LIMIT 200').bind(now - 6 * 3600e3),
       db.prepare('SELECT COUNT(*) AS n, MAX(last) AS last, SUM(n) AS hits FROM faults'),
@@ -205,6 +210,7 @@ async function raceControl(req, env, url, c, ctx) {
       log: log.results,
       live: {
         help_on: S.help_on === '1', field_code: S.field_code || '',
+        garmin: { on: !!env.GARMIN_PASSWORD, last: +S.garmin_last || 0, err: S.garmin_err || '' },
         notices: nt.results.map(r => Object.assign(JSON.parse(r.data), { id: r.id, t: r.created, until: r.until })),
         field: fp.results.map(r => Object.assign(JSON.parse(r.data), { id: r.id, name: r.name, t: r.t })),
         faults: fa.results[0] || { n: 0 }, alerts: (ps.results[0] || {}).n || 0
@@ -628,6 +634,45 @@ async function liveState(env) {
   return Object.assign({ now }, v);
 }
 
+// ---------- Garmin inReach (MapShare) ----------
+// The sweeps carry inReach units that report by satellite. Their MapShare feed (KML, behind the MapShare password)
+// is read at most once a minute while a Control board is open (and on the Worker's timer, if it has one): every
+// new point goes into field_track (app 'garmin') and the latest of each unit into field_pos, so they show on the
+// Control map with the field phones and come out in Download tracks. Only points newer than the last one seen are
+// asked for. An inReach in SOS is flagged (sos) on the board.
+let garminAt = 0;
+async function garminPoll(env, db, now) {
+  const c = cfg(env);
+  if (!env.GARMIN_PASSWORD || !c.GARMIN_SHARE || now - garminAt < 55e3) return null;
+  garminAt = now;
+  await ensureLive(db);
+  const last = +(await getSetting(db, 'garmin_last')) || 0;
+  const since = new Date(Math.max(last + 1000, now - (+c.GARMIN_DAYS || 1) * 24 * 3600e3)).toISOString().slice(0, 19) + 'Z';
+  const r = await fetch(`https://share.garmin.com/Feed/Share/${encodeURIComponent(c.GARMIN_SHARE)}?d1=${since}`,
+    { headers: { Authorization: 'Basic ' + btoa(':' + env.GARMIN_PASSWORD), 'User-Agent': 'SingleTrack Running Wild' } });
+  if (!r.ok) { await setSetting(db, 'garmin_err', 'HTTP ' + r.status + ' at ' + new Date(now).toISOString(), now).run(); return { error: r.status }; }
+  const kml = await r.text(), pts = [];
+  for (const m of kml.matchAll(/<Placemark>([\s\S]*?)<\/Placemark>/g)) {
+    const d = {}; for (const x of m[1].matchAll(/<Data name="([^"]+)">\s*<value>([\s\S]*?)<\/value>/g)) d[x[1]] = x[2].trim();
+    const lat = num(d.Latitude, AREA.lat[0], AREA.lat[1]), lon = num(d.Longitude, AREA.lon[0], AREA.lon[1]);
+    const t = Date.parse((m[1].match(/<when>([^<]+)<\/when>/) || [])[1] || '');
+    const name = txt(d['Map Display Name'] || d.Name, 30);
+    if (lat == null || lon == null || !isFinite(t) || !name || d['Valid GPS Fix'] === 'False') continue;
+    pts.push({ id: 'garmin-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), name: name + ' (inReach)', t, lat, lon,
+      spd: num(parseFloat(d.Velocity) / 3.6, 0, 100), sos: d['In Emergency'] === 'True', ev: txt(d.Event || '', 60) });
+  }
+  const fresh = pts.filter(p => p.t > last).sort((a, b) => a.t - b.t);
+  if (!fresh.length) { await setSetting(db, 'garmin_err', '', now).run(); return { n: 0 }; }
+  const ops = fresh.map(p => db.prepare('INSERT INTO field_track (id, name, t, recv, lat, lon, acc, km, course, off_m, bat, charging, spd, src, bg) VALUES (?1, ?2, ?3, ?4, ?5, ?6, NULL, NULL, NULL, NULL, NULL, NULL, ?7, \'garmin\', 0)')
+    .bind(p.id, p.name, p.t, now, p.lat, p.lon, p.spd));
+  const latest = {}; fresh.forEach(p => { latest[p.id] = p; });
+  Object.values(latest).forEach(p => ops.push(db.prepare('INSERT INTO field_pos (id, name, data, t, updated) VALUES (?1, ?2, ?3, ?4, ?5) ON CONFLICT(id) DO UPDATE SET name = ?2, data = ?3, t = ?4, updated = ?5 WHERE ?4 >= field_pos.t')
+    .bind(p.id, p.name, JSON.stringify({ lat: p.lat, lon: p.lon, acc: 0, src: 'garmin', sos: p.sos || fresh.some(x => x.id === p.id && x.sos), ev: p.ev }), p.t, now)));
+  ops.push(setSetting(db, 'garmin_last', fresh[fresh.length - 1].t, now), setSetting(db, 'garmin_err', '', now));
+  await db.batch(ops);
+  return { n: fresh.length };
+}
+
 async function liveApi(req, env, url, c, ctx) {
   const json = (o, status, extra) => new Response(JSON.stringify(o), { status: status || 200, headers: Object.assign({}, c.headers, extra) });
   if (!env.DB) return json({ error: 'The line to the phones isn\'t set up on the Worker yet (it needs the DB database)' }, 503);
@@ -939,6 +984,7 @@ export default {
           archiveRun(env, false).then(r => console.log('archive: ' + JSON.stringify(r))).catch(e => console.log('archive failed: ' + e.message))
         ]);
       }
+      if (env.DB) await garminPoll(env, env.DB, now).catch(e => console.log('garmin: ' + e.message));
       if (env.DB) await pushRun(env, now).then(r => { if (r && (r.news || r.sent)) console.log('alerts: ' + JSON.stringify(r)); }).catch(e => console.log('alerts failed: ' + e.message));
     })());
   }
