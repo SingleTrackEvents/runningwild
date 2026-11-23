@@ -476,7 +476,8 @@
     return src.stations.map(s => ({ name: s.name, lat: s.lat, lon: s.lon, posts: (src.st || src.posts).filter(p => p.station === s.name && !/passage/i.test(p.label) && on(p, h)) }))
       .filter(x => x.posts.length);
   }
-  window.MedPlan = { unlocked: () => !!P, pw: storedPw, vehicles, soOnPost, render, nearbyHTML, soNearHTML, soLine, onShow, ready: unlockStored().then(ok => { if (ok) render(); refreshFind(); }) };
+  // unlock / lock: the Control tab's own password box (Running Wild has no Medical tab).
+  window.MedPlan = { unlock: async pw => { await unlock(pw); refreshFind(); }, lock, unlocked: () => !!P, pw: storedPw, vehicles, soOnPost, render, nearbyHTML, soNearHTML, soLine, onShow, ready: unlockStored().then(ok => { if (ok) render(); refreshFind(); }) };
   // Keep the public Safety Officer markers in step with the clock when the plan isn't unlocked.
   setInterval(() => { if (!P) drawFindLayer(); }, 5 * 60e3);
   addEventListener('load', () => { if (!P) drawFindLayer(); });

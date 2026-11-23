@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// GPT100 hourly weather watch. Run by .github/workflows/weather.yml every hour.
+// Running Wild hourly weather watch (from the GPT100's). Run by .github/workflows/weather.yml every hour.
 //
 //   node tools/weather_watch.mjs --prev <last published data dir> --out <dir to publish> [--force-models] [--dry]
 //
@@ -72,7 +72,7 @@ function gridPoints() {
 async function get(url, type = 'json', tries = 3) {
   for (let k = 1; ; k++) {
     try {
-      const res = await fetch(url, { headers: { 'User-Agent': 'GPT100 weather watch (singletrackevents.github.io/GPT100)' }, signal: AbortSignal.timeout(90000) });
+      const res = await fetch(url, { headers: { 'User-Agent': 'SingleTrack Running Wild weather watch (singletrackevents.github.io/runningwild)' }, signal: AbortSignal.timeout(90000) });
       if (res.status === 429 && k < tries) { console.log('  rate limited, waiting 65 s'); await sleep(65000); continue; }
       if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + (await res.text()).slice(0, 200));
       return type === 'json' ? await res.json() : await res.text();
@@ -231,7 +231,7 @@ async function fetchReplay(year, points) {
 
 // ---------- phone alerts ----------
 const NTFY = process.env.NTFY_TOPIC;
-const APP = process.env.APP_URL || 'https://singletrackevents.github.io/GPT100/#weather';
+const APP = process.env.APP_URL || 'https://singletrackevents.github.io/runningwild/#weather';
 async function notify(title, body, priority, tags) {
   console.log(`ALERT [${priority}] ${title}\n  ${body.replace(/\n/g, '\n  ')}`);
   if (DRY || !NTFY) return;
@@ -287,7 +287,7 @@ async function alerts(tr, state, warnings, incidents) {
   if (live && WX.localHour(NOW) >= 6 && state.digest !== today) {
     const lines = Object.values(tr).map(s => `${s.label}: ` + WX.ORDER.map(k => s.triggers[k]).filter(r => r.status === 'met' || r.status === 'close')
       .map(r => `${r.label} ${WORD[r.status]}`).join(', ') || `${s.label}: all clear`);
-    await notify('GPT100 weather this morning', lines.map(l => l.replace(/^(.*?): \1: /, '$1: ')).join('\n'), 3, 'sunrise');
+    await notify(CFG.event + ' weather this morning', lines.map(l => l.replace(/^(.*?): \1: /, '$1: ')).join('\n'), 3, 'sunrise');
     state.digest = today;
   }
 }
@@ -444,7 +444,7 @@ async function main() {
   await alerts(triggers, state, warnings, incidents);
   if (flag('--test-alert')) {
     const s = triggers.next48;
-    await notify('GPT100 weather: test alert', 'Phone alerts are working. Next 48 hours: ' + (WX.ORDER.map(k => s.triggers[k]).filter(r => r.status === 'met' || r.status === 'close')
+    await notify(CFG.event + ' weather: test alert', 'Phone alerts are working. Next 48 hours: ' + (WX.ORDER.map(k => s.triggers[k]).filter(r => r.status === 'met' || r.status === 'close')
       .map(r => r.label + ' ' + WORD[r.status]).join(', ') || 'all clear') + '.', 3, 'white_check_mark');
     if (!NTFY) console.log('No NTFY_TOPIC secret set, so nothing was sent.');
   }

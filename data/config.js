@@ -23,7 +23,8 @@ window.GPT100_CONFIG = {
   redMin: 120,
   // Weather. The trigger levels are the GPT100's (Risk Management Plan v3.2): to confirm against the Buller plan.
   weather: {
-    dataUrl: '',  // no hourly weather watch for the test
+    // Where the hourly weather watch publishes (.github/workflows/weather.yml, a separate branch so the site isn't rebuilt).
+    dataUrl: 'https://raw.githubusercontent.com/SingleTrackEvents/runningwild/weather-data/',
     // The Running Wild Worker (tools/refresh-worker.js; setup in tools/RUNNING_WILD_WORKER.md): the Control board,
     // the line to the phones and the tracking test's position history.
     refreshUrl: 'https://runningwild-live.chad-ad3.workers.dev',

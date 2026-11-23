@@ -175,6 +175,22 @@ def main(folder):
 // the course). km is measured on the GPX; up and down from its heights, lightly smoothed. The Northside Express cut-off
 // (16:00) sends runners to the finish without the summit climb.""")
 
+    # ---------- pacing for the weather (the 45km, the longest day out) ----------
+    # fast: the first runner (estimated); slow: the cut-offs, with points that have none placed in proportion by km
+    # between the cut-offs either side. The weather watch and Weather tab put both runners against the forecast.
+    pts = stages['45k']['points']
+    def mins(t): return int(t[11:13]) * 60 + int(t[14:16])
+    cut = [(p['km'], mins(p['cutoff'])) for p in pts if p['cutoff']]
+    def slow_at(km):
+        for (k0, m0), (k1, m1) in zip(cut, cut[1:]):
+            if k0 <= km <= k1: return m0 + (m1 - m0) * (km - k0) / (k1 - k0 or 1)
+        return cut[-1][1]
+    pacing = {'miler': {'label': 'Mt Buller SkyRun 45km', 'points': [
+        {'km': p['km'], 'name': p['name'], 'fast': p['first'], 'slow': hm(add_minutes('00:00', round(slow_at(p['km']))))} for p in pts]}}
+    js('pacing.js', 'GPT100_PACING', pacing, """// Runner pacing for the weather (watch, timeline and simulator): the 45km's first runner (estimated) and the
+// cut-offs, with points that have no cut-off placed in proportion (tools/events/buller/build.py). Key 'miler' is the
+// app's name for the main race.""")
+
     # ---------- posts on the map (no names) ----------
     # t0 07:00; a and z are hours after it. Mirimbah: the Safety Officer (Day 1 crew table). Marshals: Craig's Hut and the
     # summit (from 10:00). The Cornhill Road crossing and the gate-touch point aren't placed yet: their positions
@@ -192,7 +208,6 @@ def main(folder):
     # ---------- GPT100-only data, emptied ----------
     for name, var, note in [('track-grades.js', 'GPT100_TRACK', 'No track grades for Mt Buller yet (the GPT100 used the Parks Victoria grades).'),
                             ('helipads.js', 'GPT100_HELIPADS', 'No helicopter landing sites for Mt Buller yet.'),
-                            ('pacing.js', 'GPT100_PACING', 'No pacing for the weather simulator yet.'),
                             ('splits.js', 'GPT_SPLITS', 'No fitted splits: no timing history for Mt Buller in the app yet.'),
                             ('contingency.js', 'GPT100_CONTINGENCY', 'No contingency course.'),
                             ('demo-runners.js', 'GPT100_DEMO', 'No demo runners for Mt Buller yet.')]:

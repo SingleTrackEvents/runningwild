@@ -1,0 +1,74 @@
+# Hourly Running Wild weather watch, for the event in data/config.js: fetches the forecast models, CFA fire ratings, BOM warnings and air quality,
+# checks the risk triggers, sends phone alerts (ntfy) and publishes the results to the weather-data branch
+# for the Weather tab. Set the NTFY_TOPIC secret for alerts. OPEN_METEO_KEY is optional (commercial licence).
+name: Weather watch
+
+on:
+  schedule:
+    # Four tries an hour, away from the top of the hour: GitHub sometimes delays or drops scheduled runs,
+    # so a missed one is picked up 15 minutes later. Models are still only fetched every 3 hours.
+    - cron: '4,19,34,49 * * * *'
+  workflow_dispatch:
+    inputs:
+      force_models:
+        description: Fetch every forecast model now
+        type: boolean
+        default: false
+      test_alert:
+        description: Send a test phone alert
+        type: boolean
+        default: false
+      test_update:
+        description: Send a draft weather update to the phone now
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: weather-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Previous results
+        run: |
+          mkdir -p wx-prev
+          if git fetch --depth=1 origin weather-data; then
+            git --work-tree=wx-prev checkout FETCH_HEAD -- .
+            git reset -q
+          fi
+
+      - name: Weather watch
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          OPEN_METEO_KEY: ${{ secrets.OPEN_METEO_KEY }}
+          EPA_KEY: ${{ secrets.EPA_KEY }}
+          TZ: Australia/Melbourne
+        run: node tools/weather_watch.mjs --prev wx-prev --out wx-out ${{ inputs.force_models && '--force-models' || '' }} ${{ inputs.test_alert && '--test-alert' || '' }} ${{ inputs.test_update && '--test-update' || '' }}
+
+      - name: Publish to the weather-data branch
+        run: |
+          cd wx-out
+          git init -q -b weather-data
+          git add -A
+          git -c user.name='Running Wild weather watch' -c user.email='actions@users.noreply.github.com' commit -q -m "Weather data $(date -u +%FT%TZ)"
+          # GitHub occasionally rejects a push with a one-off server error ("fatal error in commit_refs").
+          # Try a few times before calling the run a failure.
+          for i in 1 2 3 4; do
+            if git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" weather-data; then exit 0; fi
+            echo "Push failed (try $i of 4), waiting $((i * 15)) s"
+            sleep $((i * 15))
+          done
+          echo "::error::Could not publish the weather data after 4 tries"
+          exit 1

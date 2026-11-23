@@ -185,7 +185,8 @@
           <label class="rc-who">You <input id="rcWho" type="text" maxlength="40" placeholder="Your name" value="${esc(who())}"></label>
           <button id="rcNew" class="btn primary small" type="button">New incident</button>
           ${C.tracking && C.tracking.url ? `<a class="btn small" href="${esc(C.tracking.url)}" target="_blank" rel="noopener" title="${C.tracking.credit && C.tracking.credit.name ? 'Timing and tracking by ' + esc(C.tracking.credit.name) : ''}">${esc(C.tracking.label || 'Live tracking')}</a>` : ''}
-          <button id="rcExport" class="btn small" type="button">Export</button></div>
+          <button id="rcExport" class="btn small" type="button">Export</button>
+          <button id="rcLock" class="btn small" type="button" title="Forget the password on this device">Lock</button></div>
       </div>
       <div class="rc-col rc-incs"><p id="rcStoreWarn" class="notice warn"${memOnly ? '' : ' hidden'}>This device won't save Race Control entries, so the ones waiting to send are only kept in this tab. Keep this tab open until they've sent.</p><div id="rcForm"></div><div id="rcOpen"></div><details class="rc-closed"><summary id="rcClosedSum">Closed</summary><div id="rcClosed"></div></details></div>
       <div class="rc-col rc-mid"><div class="rc-mapbox"><div id="rcMap"></div></div>
@@ -197,6 +198,7 @@
     $('rcWho').addEventListener('change', e => { try { localStorage.setItem(LSN, e.target.value.trim()); } catch (x) { } });
     $('rcNew').addEventListener('click', () => openForm({}));
     $('rcExport').addEventListener('click', exportCSV);
+    $('rcLock').addEventListener('click', () => { if (confirm('Lock Race Control on this device? You\'ll need the password again.') && window.MedPlan) window.MedPlan.lock(); });
     $('rcLogForm').addEventListener('submit', e => {
       e.preventDefault();
       const t = $('rcLogText').value.trim(); if (!t) return flash($('rcLogText'));
@@ -267,8 +269,16 @@
     if (!BASE) { $('rcBody').innerHTML = '<div class="rc-msg"><h2>Race Control</h2><p>Race Control needs the Running Wild Worker. See tools/RUNNING_WILD_WORKER.md.</p></div>'; built = false; return; }
     if (!unlocked()) {
       built = false; if (map) { map.remove(); map = null; layer = null; }
-      $('rcBody').innerHTML = '<div class="rc-msg"><h2>Race Control</h2><p>Race Control uses the medical password. Unlock the Medical tab on this device, then come back.</p><p><button class="btn primary" id="rcGoMed" type="button">Go to Medical</button></p></div>';
-      $('rcGoMed').addEventListener('click', () => { location.hash = 'medical'; });
+      // The staff password, checked with the Worker (js/medplan.js). The device remembers it until Lock.
+      $('rcBody').innerHTML = `<div class="rc-msg"><h2>Race Control</h2><p>Enter the staff password from the Race Director. This device remembers it until you lock it.</p>
+        <form id="rcUnlock" class="search-row" autocomplete="off"><input id="rcPw" type="password" placeholder="Password" autocomplete="current-password"><button class="btn primary" type="submit">Unlock</button></form>
+        <p class="msg" id="rcPwMsg" role="status"></p></div>`;
+      $('rcUnlock').addEventListener('submit', async e => {
+        e.preventDefault(); const pw = $('rcPw').value; if (!pw || !window.MedPlan) return;
+        $('rcPwMsg').textContent = 'Checking...';
+        try { await window.MedPlan.unlock(pw); }
+        catch (err) { $('rcPwMsg').textContent = /wrong password/.test(err.message) ? 'That password didn\'t work.' : 'Couldn\'t check the password: no signal, or the Worker isn\'t set up yet.'; }
+      });
       return;
     }
     if (lastErr && /set up/.test(lastErr) && !incidents.size) {

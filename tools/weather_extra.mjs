@@ -198,7 +198,7 @@ export async function fetchIncidents({ get, route, W, now }) {
 // Live PM2.5 at the EPA monitoring sites nearest the course. Needs EPA_KEY (free, from the EPA API portal).
 export async function fetchEPA({ route, W, now, key }) {
   const res = await fetch('https://gateway.api.epa.vic.gov.au/environmentMonitoring/v1/sites?environmentalSegment=air',
-    { headers: { 'X-API-Key': key, 'User-Agent': 'GPT100 weather watch' }, signal: AbortSignal.timeout(60000) });
+    { headers: { 'X-API-Key': key, 'User-Agent': 'SingleTrack Running Wild weather watch' }, signal: AbortSignal.timeout(60000) });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   const js = await res.json();
   const sites = [];

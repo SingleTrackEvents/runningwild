@@ -711,10 +711,10 @@
   function fromHash() {
     let h = '';
     try { h = decodeURIComponent(location.hash.slice(1)); } catch (e) { }
-    if (h === 'medical') { showTab('med'); return; }
+    // Running Wild has no Medical or Risk tab: old links to them open Control, where the password goes.
+    if (h === 'medical' || h === 'risk') { showTab('rc'); return; }
     if (h === 'weather') { showTab('wx'); return; }
     if (h === 'control') { showTab('rc'); return; }
-    if (h === 'risk') { showTab('risk'); return; }
     showTab('find');
     const cm = /[&?]c=([\w-]+)/.exec(h), rm = /[&?]r=([\w-]+)/.exec(h);
     setCourse(cm ? cm[1] : window.GPT.id);

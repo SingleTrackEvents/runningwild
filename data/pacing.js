@@ -1,2 +1,4 @@
-// No pacing for the weather simulator yet. (tools/events/buller/build.py)
-window.GPT100_PACING = null;
+// Runner pacing for the weather (watch, timeline and simulator): the 45km's first runner (estimated) and the
+// cut-offs, with points that have no cut-off placed in proportion (tools/events/buller/build.py). Key 'miler' is the
+// app's name for the main race.
+window.GPT100_PACING = {"miler":{"label":"Mt Buller SkyRun 45km","points":[{"km":0.0,"name":"Start, Mt Buller Village","fast":"2026-12-06T08:00","slow":"2026-12-06T08:00"},{"km":8.01,"name":"Mt Stirling aid station","fast":"2026-12-06T08:47","slow":"2026-12-06T10:00"},{"km":12.96,"name":"Craig's Hut gate (turnaround)","fast":"2026-12-06T09:16","slow":"2026-12-06T11:02"},{"km":17.55,"name":"Mt Stirling aid station (second pass)","fast":"2026-12-06T09:43","slow":"2026-12-06T12:00"},{"km":32.01,"name":"Mirimbah Park aid station","fast":"2026-12-06T11:08","slow":"2026-12-06T14:00"},{"km":39.72,"name":"Northside Express","fast":"2026-12-06T11:53","slow":"2026-12-06T16:00"},{"km":41.22,"name":"Mt Buller summit","fast":"2026-12-06T12:02","slow":"2026-12-06T16:20"},{"km":44.26,"name":"Finish, Mt Buller Village","fast":"2026-12-06T12:20","slow":"2026-12-06T17:00"}]}};
