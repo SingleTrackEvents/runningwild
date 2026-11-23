@@ -182,7 +182,10 @@ async function fetchAirQuality(points) {
   return { t0: time[0], n, points: aqPts.map(p => ({ km: p.km, name: p.name, lat: p.lat, lon: p.lon })), aqi: aqi.slice(0, n), pm25: pm.slice(0, n) };
 }
 
-const CFA_FEEDS = { Wimmera: 'wimmera-firedistrict', 'South West': 'southwest-firedistrict' };
+// Every Victorian fire district, so each Running Wild event only has to name its own (weather.districts in config.js).
+const CFA_FEEDS = { Mallee: 'mallee-firedistrict', Wimmera: 'wimmera-firedistrict', 'South West': 'southwest-firedistrict',
+  'Northern Country': 'northerncountry-firedistrict', 'North Central': 'northcentral-firedistrict', Central: 'central-firedistrict',
+  'North East': 'northeast-firedistrict', 'East Gippsland': 'eastgippsland-firedistrict', 'West and South Gippsland': 'westandsouthgippsland-firedistrict' };
 async function fetchFire() {
   const days = {};
   for (const dist of W.districts) {
