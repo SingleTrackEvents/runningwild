@@ -60,6 +60,8 @@
     if (!E) { const a = MAIN.AID.find(a => words(P[0].name).some(w => !STOP.has(w) && words(a.name).includes(w))); P.forEach(p => { p.ft = mel(p.first); p.ct = mel(p.cutoff); if (a) { p.lat = a.lat; p.lon = a.lon; } }); return stage; }
     let from = 0;
     P.forEach((p, i) => {
+      // A point that knows its km on the line (Running Wild events, from the GPX) needs no matching by name.
+      if (p.gk != null) { from = p.gk; return; }
       const w = words(p.name), key = w.filter(x => !STOP.has(x));
       if (NOT_A_STOP.has(w.join(' '))) return;
       let best = null;
@@ -80,6 +82,10 @@
       P[i].gk = P[a].gk + (P[b].gk - P[a].gk) * (P[i].km - P[a].km) / ((P[b].km - P[a].km) || 1);
     }
     P.forEach(p => { if (p.lat == null) { const q = E.route[E.idxAtKm(p.gk)]; p.lat = q[0]; p.lon = q[1]; } p.ft = mel(p.first); p.ct = mel(p.cutoff); });
+    // A race with no finish cut-off (the Buller 2km Kids Trail): an end time for the pace sums (three times the first
+    // runner's time), marked noCut so it's never shown as a cut-off.
+    const F = P[P.length - 1];
+    if (!F.ct && F.ft && P[0].ft) { F.ct = new Date(P[0].ft.getTime() + 3 * (F.ft - P[0].ft)); F.noCut = true; }
     // Out-and-back courses: the turnaround becomes a point too (its times are in proportion; no cut-off).
     E.AID.filter(a => a.kind === 'turn').forEach(a => {
       const i = P.findIndex(p => p.gk > a.trail_km); if (i < 1) return;

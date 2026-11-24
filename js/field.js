@@ -38,7 +38,7 @@
     $('fdStages').hidden = list.length < 2;
     $('fdStages').innerHTML = list.map(x => `<button type="button" data-s="${x.id}"${x === S ? ' class="on"' : ''}>${esc(x.label)}</button>`).join('');
     $('fdStages').querySelectorAll('button').forEach(b => b.onclick = () => { rstore.set('stage.' + race.id, { id: b.dataset.s, day: day() }); setStage(RX.R.stages[b.dataset.s]); if (here) render(); });
-    $('fdRaceStart').textContent = `${one(fin.km)} km, +${fin.up} m. Starts ${RX.when(P[0].ft)} at ${P[0].name}. Final cut-off ${RX.when(fin.ct)}.`;
+    $('fdRaceStart').textContent = `${one(fin.km)} km, +${fin.up} m. Starts ${RX.when(P[0].ft)} at ${P[0].name}.${fin.noCut ? ' No cut-off' : ' Final cut-off ' + RX.when(fin.ct)}.`;
     // An older field.html (still in the phone's cache) has no fdKmFor: name the race in its label instead.
     const kf = $('fdKmFor'), kl = document.querySelector('label[for="fdKm"]');
     if (kf) kf.textContent = rname(); else if (kl) kl.textContent = `No GPS? Enter the ${rname()} km`;
@@ -440,7 +440,7 @@
     $('fdHero').innerHTML = `<p class="rn-hero-race">${esc(race.label)}${race.stages.length > 1 ? ' · ' + esc(stage.label) : ''}</p>
       <p class="rn-hero-count">${count}</p>
       <div class="rn-hero-facts"><span><b>${one(fin.km)}</b> km</span><span><b>+${fin.up.toLocaleString('en-AU')}</b> m</span><span><b>${P.length - 2}</b> aid points</span></div>
-      <p>Start <b>${RX.when(P[0].ft)}</b> at ${esc(P[0].name)}<br>Final cut-off <b>${RX.when(fin.ct)}</b> at ${esc(fin.name)}</p>${extra}${RX.ridge ? RX.ridge(S) : ''}`;
+      <p>Start <b>${RX.when(P[0].ft)}</b> at ${esc(P[0].name)}${fin.noCut ? '' : `<br>Final cut-off <b>${RX.when(fin.ct)}</b> at ${esc(fin.name)}`}</p>${extra}${RX.ridge ? RX.ridge(S) : ''}`;
     // The next cut-offs on this race (for sweeps), with how long until each.
     const nxt = P.filter((x, i) => i && x.ct && !x.noCut && x.ct.getTime() > now).slice(0, 3);
     $('fdHomeNext').innerHTML = `<h2>Next cut-offs</h2>` + (nxt.length ? nxt.map(x => `<div class="rn-now-i rn-home-i"><b>${RX.when(x.ct)}</b><span>${esc(x.name)} · km ${one(x.km)}</span><em>${until(x.ct.getTime() - now)}</em></div>`).join('') : '<p class="muted">All the cut-offs for this race have passed.</p>') +

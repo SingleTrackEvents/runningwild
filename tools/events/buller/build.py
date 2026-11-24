@@ -70,7 +70,8 @@ def race(route, start, winner_min, pts):
     out = []
     for name, kind, i, cut, crew in pts:
         km = route[i][2]
-        out.append({'name': name, 'kind': kind, 'km': round(km, 2), 'up': U[i], 'down': D[i],
+        # gk: the point's km on its own course line (exact, from the GPX), so the apps don't place it by name.
+        out.append({'name': name, 'kind': kind, 'km': round(km, 2), 'gk': round(km, 3), 'up': U[i], 'down': D[i],
                     'first': hm(add_minutes(start, winner_min * km / total)),
                     'cutoff': hm(cut) if cut else None, 'drop': False, 'crew': crew})
     return out
@@ -111,6 +112,8 @@ def main(folder):
 // Files, 18 November 2026). Climb is measured from the GPX heights, lightly smoothed. No drive times yet.""")
 
     # ---------- 36km and 22km: courses of their own ----------
+    # Stop names match the race points' names in data/races.js (the apps place each race on its line by name: a plain
+    # "Start" let the 22km's start match "Mt Buller summit" and the line came out as its last 3 km).
     def stops(route, wpts, rows):
         out = []
         for name, kind, i in rows:
@@ -121,15 +124,15 @@ def main(folder):
     i22 = {'stir': at(r22, 'Aid Station - Mt Stirling', w22), 'hq1': at(r22, 'Howqua Gap Hut', w22, 0), 'hq2': at(r22, 'Howqua Gap Hut', w22, 1), 'sum': at(r22, 'Summit - Mt Buller', w22)}
     courses = [
         {'id': '36k', 'name': 'Mt Buller SkyRun 36km', 'label': '36km', 'note': '', 'total_km': round(r36[-1][2], 1), 'total_ascent_m': smooth_ascent(r36)[0],
-         'stops': stops(r36, w36, [('Start', 'start', 0), ('Mt Stirling aid station', 'aid', i36['Aid Station - Mt Stirling']),
+         'stops': stops(r36, w36, [('Start, ' + VILLAGE, 'start', 0), ('Mt Stirling aid station', 'aid', i36['Aid Station - Mt Stirling']),
                                    ('Mirimbah Park aid station', 'aid', i36['Aid Station - Mirimbah Park']),
                                    ('Northside Express (checkpoint)', 'checkpoint', i36['Northside Express']),
-                                   ('Mt Buller summit', 'checkpoint', i36['Summit - Mount Buller']), ('Finish', 'finish', len(r36) - 1)]),
+                                   ('Mt Buller summit', 'checkpoint', i36['Summit - Mount Buller']), ('Finish, ' + VILLAGE, 'finish', len(r36) - 1)]),
          'joins': {}, 'route': r36},
         {'id': '22k', 'name': 'Mt Buller SkyRun 22km', 'label': '22km', 'note': '', 'total_km': round(r22[-1][2], 1), 'total_ascent_m': smooth_ascent(r22)[0],
-         'stops': stops(r22, w22, [('Start', 'start', 0), ('Howqua Gap Hut', 'checkpoint', i22['hq1']), ('Mt Stirling aid station', 'aid', i22['stir']),
+         'stops': stops(r22, w22, [('Start, ' + VILLAGE, 'start', 0), ('Howqua Gap Hut', 'checkpoint', i22['hq1']), ('Mt Stirling aid station', 'aid', i22['stir']),
                                    ('Howqua Gap Hut (way back)', 'checkpoint', i22['hq2']), ('Mt Buller summit', 'checkpoint', i22['sum']),
-                                   ('Finish', 'finish', len(r22) - 1)]),
+                                   ('Finish, ' + VILLAGE, 'finish', len(r22) - 1)]),
          'joins': {}, 'route': r22},
     ]
     js('courses.js', 'GPT100_COURSES', courses, """// Mt Buller SkyRun 2026: the 36km and the 22km, alongside the 45km in data/course.js (tools/events/buller/build.py).
@@ -139,8 +142,8 @@ def main(folder):
     def small(cid, name, route, rows):
         return {'id': cid, 'name': name, 'total_km': round(route[-1][2], 3),
                 'stops': [{'name': n, 'kind': k, 'km': route[i][2], 'lat': route[i][0], 'lon': route[i][1]} for n, k, i in rows], 'route': route}
-    rc = {'5k': small('5k', 'Mt Buller SkyRun 5km', r5, [('Start', 'start', 0), ('Mt Buller summit', 'checkpoint', at(r5, 'Summit - Mt Buller', w5)), ('Finish', 'finish', len(r5) - 1)]),
-          '2k': small('2k', 'Mt Buller SkyRun 2km Kids Trail', r2, [('Start', 'start', 0), ('Finish', 'finish', len(r2) - 1)])}
+    rc = {'5k': small('5k', 'Mt Buller SkyRun 5km', r5, [('Start, ' + VILLAGE, 'start', 0), ('Mt Buller summit', 'checkpoint', at(r5, 'Summit - Mt Buller', w5)), ('Finish, ' + VILLAGE, 'finish', len(r5) - 1)]),
+          '2k': small('2k', 'Mt Buller SkyRun 2km Kids Trail', r2, [('Start, ' + VILLAGE, 'start', 0), ('Finish, ' + VILLAGE, 'finish', len(r2) - 1)])}
     js('runner-courses.js', 'GPT_RUNNER_COURSES', rc, """// Mt Buller SkyRun 2026: the 5km and the 2km Kids Trail, for the runner and field apps' maps (tools/events/buller/build.py).""")
 
     # ---------- races and cut-offs ----------
