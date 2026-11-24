@@ -1,6 +1,6 @@
 # Running Wild Safety App: Scope
 
-Draft v0.3, 24 November 2026. v0.3 adds decisions 9 to 11 (Medical and Risk tabs out, Weather condensed, the logo). v0.2 records the decisions on the scope questions (section 9) and adds planning for race rego and volunteer rego (section 10). Prepared for Chad Freak, Operations Manager.
+Draft v0.4, 24 November 2026. v0.4 records decision 12: one shared core for every SingleTrack event, built in [SingleTrackEvents/singletrack-app](https://github.com/SingleTrackEvents/singletrack-app) (formerly BuffaloStampede), with Running Wild, Buffalo Stampede and the GPT100 as event packs on it. v0.3 adds decisions 9 to 11 (Medical and Risk tabs out, Weather condensed, the logo). v0.2 records the decisions on the scope questions (section 9) and adds planning for race rego and volunteer rego (section 10). Prepared for Chad Freak, Operations Manager.
 
 This scopes a safety app for the SingleTrack Running Wild series, built on what the GPT100 Safety app already does. It covers what carries over, what has to change so one app runs every Running Wild event, what's new, and a build plan against the season dates.
 
@@ -131,11 +131,13 @@ Most of it. The GPT100 app is about 10,000 lines of tested code and a lot of it 
 
 - Registration (Race Roster stays), the volunteer platform (Chad's iVolunteer replacement, from January) and results. The app links to them.
 - One SingleTrack login across rego, volunteering and the app (Day 2). We build so it can plug in later (section 10), but not now.
-- Buffalo Stampede and the GPT100 themselves. Whether they move onto this app is decided after the Prom (see 9). The code stays event-neutral so that stays an option.
+- Buffalo Stampede and the GPT100 themselves. **Decided 24 November (decision 12):** they are event packs on the same shared core as Running Wild, in `singletrack-app`. Buffalo's own scope is in that repository (`docs/SCOPE.md`).
 
 ## 7. How we build it
 
-Start this repository from a copy of the GPT100 app, then pull everything GPT-specific out into a GPT100 event pack. The core then reads any event pack. We leave the live GPT100 repository untouched. After the Prom we decide whether the GPT100 2027 and Buffalo become event packs in this app, so we'd only maintain one codebase.
+The shared core is built in `singletrack-app`, starting from this repository's code (the GPT100 app made event-neutral). Everything event-specific moves into event packs, and each event switches on the modules it needs: Running Wild leaves Medical and Risk off (decision 9), Buffalo and the GPT100 switch on nearly everything. We leave the live GPT100 repository untouched until the GPT100 2027 moves across. This repository stays as it is for the Mt Buller tracking test (phase 0).
+
+Two guard rails keep one codebase safe for many events: each event pack runs its own crash tests and demo before release, and each event locks to a tested build a week before race day, so a change made for one event can't reach another's race week.
 
 Keep what works on the GPT100: plain web app (no build step), Leaflet maps, GitHub Pages hosting, the Cloudflare Worker for the live line, Race Control database and relays, and the crash tests before every release.
 
@@ -148,10 +150,10 @@ The App Store and Google Play app (for runners' background location) waits until
 | Phase | Ready for | What ships |
 | --- | --- | --- |
 | 0. Tracking test | Mt Buller, 6 Dec 2026 | The GPT100 field app pointed at the Buller course, to test Safety Officer and phone tracking: battery use, how often fixes come through, Starlink, and how it looks on the Control map. No new build |
-| 1. Core | Kilcunda, 31 Jan 2027 | Event packs and picker, several courses per event, staff Find, field app, runner app (map, aid stations, Help, Schedule, Gear), Control on a phone with push alerts, weather with per-event triggers, setup tool v1. Kilcunda and Buller packs built |
+| 1. Core | Kilcunda, 31 Jan 2027 | In `singletrack-app`: event packs and picker, several courses per event, staff Find, field app, runner app (map, aid stations, Help, Schedule, Gear), Control on a phone with push alerts, weather with per-event triggers, setup tool v1. Kilcunda and Buller packs built |
 | 2. No signal | Snow Gum Run, 28 Feb 2027, and Razorback, 13 Mar 2027 | Checkpoint and sweep logging offline, who's still out, queued positions, trackers for Razorback merged with phones |
 | 3. The big ones | Alpine Challenge, 3 Apr 2027, and Wilsons Prom, 1 May 2027 | ASR and partner access, tides for the Prom, road crossings, dedicated tracker feed for Alpine |
-| 4. Review | After the Prom | Season debrief. Decide on moving GPT100 2027 and Buffalo onto this app. Hand event setup to the team with the spreadsheet template. Plan the rego and volunteer rego link (section 10) |
+| 4. Review | After the Prom | Season debrief. Move the GPT100 2027 onto the shared core (Buffalo is already on it, 19 to 21 March). Hand event setup to the team with the spreadsheet template. Plan the rego and volunteer rego link (section 10) |
 
 Each phase finishes with a rehearsal using the in-app demo (made-up runners played through the event) and the crash tests, at least a week before the event.
 
@@ -165,13 +167,14 @@ Made on 23 November 2026.
 | 2 | How do we track runners? | Web app now, App Store and Google Play app later. Runner phone tracking is best effort in season 1, with trackers at Razorback and Alpine Challenge |
 | 3 | Who sets up an event? | Chad in season 1, using setup scripts. The spreadsheet template is ready for the team from season 2 |
 | 4 | Languages? | English only, with the language setup kept in the code |
-| 5 | One app for everything? | Decide after the Prom. Keep the code event-neutral so GPT100 and Buffalo can move on if we choose |
+| 5 | One app for everything? | Yes, decided 24 November: see decision 12 |
 | 6 | Logins? | Keep the GPT100's shared passwords and team codes for season 1 |
 | 7 | Which events get the runner app? | Every event |
 | 8 | Where does the app live? | GitHub Pages for now, next to the GPT100 |
 | 9 | Medical and Risk tabs? | Not needed for Running Wild (24 November). The staff password unlocks Control from the Control tab |
 | 10 | Weather? | Keep every part (triggers, warnings, CFA, timeline, simulator, models, observations, BOM forecast, share), condensed to read easily on a phone (24 November) |
 | 11 | Branding? | The SingleTrack Running Wild logo in the app, on the home screen icon and the Android app (24 November) |
+| 12 | One shared core? | Yes (24 November). Running Wild, Buffalo Stampede and the GPT100 run on one core with event packs and switchable modules, in `singletrack-app`. Buffalo (19 to 21 March 2027) is built on it alongside Running Wild, so the core is due for Kilcunda as planned. Branding becomes part of each event pack, so Running Wild keeps its own logo |
 
 Still open:
 
